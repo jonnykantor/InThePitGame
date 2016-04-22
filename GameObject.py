@@ -1,4 +1,6 @@
 from random import randint
+import pygame, math, sys
+from pygame.locals import *
 
 class GameObject(pygame.sprite.Sprite):
 	def __init__(self, position):
@@ -82,5 +84,26 @@ class Table(GameObject):
 		self.image = pygame.transform.rotate(self.src_image, self.direction)
 		self.rect = self.image.get_rect()
 		self.rect.center = self.position
+		
+####################
 
+S_WIDTH = 500
+S_HEIGHT = 500
+DISPLAYSURF = pygame.display.set_mode((S_WIDTH, S_HEIGHT), 0, 32)
+clock = pygame.time.Clock()	
 
+surface_rect = DISPLAYSURF.get_rect()
+person = Player('art assets/basic_character_male.png', surface_rect.center)
+player_sprite_group = pygame.sprite.Group()	
+player_sprite_group.add(person)
+while 1:
+	deltat = clock.tick(30)
+	for event in pygame.event.get():
+		if not hasattr(event, 'key'): continue
+		down = event.type == KEYDOWN		
+		if event.key == K_ESCAPE: sys.exit(0)
+
+	DISPLAYSURF.fill((0,0,0))
+	player_sprite_group.update(deltat)
+	player_sprite_group.draw(DISPLAYSURF)
+	pygame.display.flip()
