@@ -69,23 +69,3 @@ def delete(heap):
 		else: not_done = False
 	ret_list = heap
 	return ret_item, ret_list
-	
-'''
-heap = []
-target = (10, 10)
-
-def mandist(p1, p2):
-	x1, y1 = p1
-	x2, y2 = p2	
-	return abs(x1 - x2) + abs(y1 - y2)
-
-for _ in range(10):
-	x = randint(0, 20)
-	y = randint(0, 20)
-	dist = mandist((x, y), target)	
-	heap = insert(heap, (dist, (x, y)))
-	print heap
-print "###"
-val, heap = delete(heap)
-print val, heap
-'''	

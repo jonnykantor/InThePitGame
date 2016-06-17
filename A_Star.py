@@ -95,17 +95,19 @@ class GameGrid(object):
 		self.target = grid_to_copy.target
 		self.start = grid_to_copy.start
 		
-	def resetGrid(self):
+	def resetGrid(self, path_finder_obj):
 		self.grid_arr = [0]*self.size
 		self.info_arr = [[None, None, None, None]]*self.size		
 		self.target = None
 		self.start = None
+		path_finder_obj.update(None, None, [], [], False, False)
 
 def A_star_step(pathfinder, grid):
 	pos = pathfinder.position
 	targ = pathfinder.target
-	orig = grid.start	
-	if pos == targ:		
+	orig = grid.start
+	if pos == None or targ == None: pathfinder.finished = True
+	if pos == targ and pos != None:		
 		grid.grid_arr[(grid.width * targ[1]) + targ[0]] = PATH
 		
 		while pos != orig:
@@ -114,7 +116,7 @@ def A_star_step(pathfinder, grid):
 			pos = grid.info_arr[(grid.width * pos[1]) + pos[0]][3]			
 		pathfinder.finished = True
 	
-	else:
+	elif pos != targ:
 		#target not yet found. Update surrounding nodes, 
 		#set position to next cheapest node in open_list
 		#move new position to close_list
@@ -165,7 +167,7 @@ def nodeInfoCheck(parent_pos, node_pos, targ_pos, info_list, parent_info_list, p
 		new_info = [None] * 4
 		new_info[3] = parent_pos
 		new_info[0] = manDist(node_pos, targ_pos)
-		new_info[1] = parent_info_list[1] + 1
+		new_info[1] = parent_info_list[1] + 1 #problem when right-click detected after grid reset
 		new_info[2] = new_info[0] + new_info[1]		
 		info_list = new_info
 		pathfinder.open_list = MH.insert(pathfinder.open_list, (info_list[2], node_pos))
