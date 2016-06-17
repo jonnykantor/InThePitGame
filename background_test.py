@@ -1,5 +1,4 @@
-import pygame, math, sys
-import os
+import pygame, math, sys, os
 from pygame.locals import *
 from random import randint
 from sys import argv
@@ -121,8 +120,9 @@ class CharacterObject(pygame.sprite.Sprite):
 		self.left_side_collision_rect = pygame.Rect( (self.rect.left - LEFT_RECT_WIDTH, self.rect.top), (LEFT_RECT_WIDTH, self.rect.height-2) )
 	
 class AICharacterObject(CharacterObject):
-	def __init__(self, screen, images, starting_position):
+	def __init__(self, screen, images, starting_position, ai_type = 0):
 		CharacterObject.__init__(self, screen, images, starting_position)
+		self.char_type = ai_type
 	
 	def update(self, direction):		
 		if direction == LEFT and self.isCollidingLeft == False: self.pos = (self.pos[0] - 10, self.pos[1])
@@ -152,28 +152,6 @@ class ForegroundSurfaceSprite(pygame.sprite.Sprite):
 	def update(self, direction, speed):
 		if direction == LEFT: self.rect = self.rect.move(speed, 0)
 		elif direction == RIGHT: self.rect = self.rect.move(-speed, 0)
-
-class ForegroundSurfaces():
-	def __init__(self, screen, images, starting_positions):
-		self.screen = screen		
-		self.scenery_surfaces = images
-		self.scenery_rects = []		
-
-		for index, surface in enumerate(self.scenery_surfaces):
-			self.scenery_rects.append( surface.get_rect().move(starting_positions[index]) )		
-			
-			
-	def updatePos(self, direction, speed):
-	
-		if direction == LEFT:			
-			self.scenery_rects = [x.move(speed, 0) for x in self.scenery_rects]			
-		elif direction == RIGHT:
-			self.scenery_rects = [x.move(-speed, 0) for x in self.scenery_rects]			
-		
-	def drawForegroundSurfaces(self):		
-		for i in range(len(self.scenery_surfaces)):
-			if self.scenery_rects[i].left < (SCREEN_WIDTH + SCREEN_WIDTH/2) and self.scenery_rects[i].right > ((-1) * SCREEN_WIDTH/2 ):
-				self.screen.blit(self.scenery_surfaces[i], self.scenery_rects[i])
 
 class BackgroundSurfaces(): #needs to be updated to handle a dynamic number of background images
 	def __init__(self, screen):
@@ -216,7 +194,75 @@ def loadImages(path, f_names):
 	for f_name in f_names:		
 		ret_surfaces.append( pygame.image.load(os.path.join(path, f_name)).convert_alpha() )
 	return ret_surfaces
+	
+def eventHandler(event_list):
+	"""
+	eventHandler takes a pygame.event.get() list and handles every event in the list	 
+	"""
+	global LEFT_KEY_DOWN
+	global RIGHT_KEY_DOWN
+	for event in event_list:		
+		#KEYPRESS EVENTS
+		if event.type == pygame.QUIT: sys.exit(0)			
+		if hasattr(event, 'key'):				
+			down = event.type == KEYDOWN		
+			if event.key == K_ESCAPE and not down: sys.exit(0)
+			elif event.key == K_LEFT:
+				if down: LEFT_KEY_DOWN = True						
+				else: LEFT_KEY_DOWN = False
+			elif event.key == K_RIGHT:
+				if down: RIGHT_KEY_DOWN = True
+				else: RIGHT_KEY_DOWN = False
+			elif event.key == K_SPACE and down:					
+				PLAYER_SPRITE_GROUP.update(UP)			
+		
+		if event.type == MOUSEMOTION: 
+			m_x_pos, m_y_pos = event.pos
+		elif event.type == MOUSEBUTTONUP:
+			m_x_pos, m_y_pos = event.pos
+	
+	if LEFT_KEY_DOWN and PLAYER.isCollidingLeft == False: 
+			PLAYER_SPRITE_GROUP.update(LEFT)
+			BACKGROUND.updatePos(LEFT, BACKGROUND_SPEED)			
+			FOREGROUND_SPRITE_GROUP.update(LEFT, FOREGROUND_SPEED)
+			AI_CHARACTER_SPRITE_GROUP.update(PLAYER_LEFT_ONLY)
+	if RIGHT_KEY_DOWN and PLAYER.isCollidingRight == False: 
+			PLAYER_SPRITE_GROUP.update(RIGHT)
+			BACKGROUND.updatePos(RIGHT, BACKGROUND_SPEED)			
+			FOREGROUND_SPRITE_GROUP.update(RIGHT, FOREGROUND_SPEED)			
+			AI_CHARACTER_SPRITE_GROUP.update(PLAYER_RIGHT_ONLY)
+				
+def updateAllGroups(sprite_groups_list):
+	"""All sprite groups in the list are given their basic per-frame update"""
+	for group in sprite_groups_list:
+		group.update(None)
 
+def drawAllSprites(draw_list, surface):
+	"""All objects in the draw_list have their draw method called"""
+	for item in draw_list:
+		item.draw(surface)
+		
+def debug_drawRects(rect_list):
+	for rect in rect_list:
+		pygame.draw_rect(SCREEN, BLUE, rect)
+		
+def AI_behavior_handler(AI_Character_list):
+	global ai_rand_act
+	global char_action	
+	for index, ai_character in enumerate(AI_Character_list):		
+		isJumping = randint(0, 125)		
+		if ai_rand_act[index] == 0:
+			char_action[index] = randint(0, 2)			
+			if char_action[index] == 2: ai_rand_act[index] = 15
+			else: ai_rand_act[index] = randint(5, 10)
+		else: ai_rand_act[index] -= 1
+		if char_action[index] == 2:
+			ai_character.update(None)
+			if isJumping == randint(0, 125): ai_character.update(UP)
+		else:			
+			ai_character.update(char_action[index])
+			if isJumping == randint(0, 125): ai_character.update(UP)		
+				
 if __name__ == "__main__": #Globals
 	
 	##directions for movement
@@ -279,6 +325,10 @@ if __name__ == "__main__": #Globals
 	DOWN_1 	= 17
 	DOWN_2 	= 18
 	DOWN_3 	= 19
+	##
+	
+	##AI Types
+	DEFAULT_AI_TYPE = 0 #debugging ai type
 	##
 	
 	##SCREEN surface attributes
@@ -364,8 +414,7 @@ if __name__ == "__main__": #Globals
 	##
 	
 	##instatiate objects
-	BACKGROUND = BackgroundSurfaces(SCREEN)	#old, should be switched to sprites
-	FOREGROUND = ForegroundSurfaces(SCREEN, foreground_surfaces, FOREGROUND_ASSET_POSITIONS) #old, should be switched to sprites
+	BACKGROUND = BackgroundSurfaces(SCREEN)	#old, should be switched to sprites	
 	
 	FOREGROUND_SPRITE_GROUP = pygame.sprite.Group()
 	for index, forg_surf in enumerate(foreground_surfaces):
@@ -396,77 +445,23 @@ if __name__ == "__main__": #Globals
 	##	
 	
 	##ai character rand action vars, temporary
-	ai_rand_act = 0
-	char_action = 2	
+	ai_rand_act = [0] * len(AI_CHARACTER_SPRITE_GROUP)	
+	char_action = [2] * len(AI_CHARACTER_SPRITE_GROUP)
 	
-if __name__ == "__main__": #main loop	
+if __name__ == "__main__": #game loop	
 	while 1:
 		time_elapsed = CLOCK.tick(30)
-				
-		#SCREEN.fill((0,0,0)) #not necessary currently as entire background is drawn to with no transparency
 		
 		event_list = pygame.event.get()
-		for event in event_list:
-			#KEYPRESS EVENTS
-			if event.type == pygame.QUIT: sys.exit(0)			
-			if hasattr(event, 'key'):				
-				down = event.type == KEYDOWN		
-				if event.key == K_ESCAPE and not down: sys.exit(0)
-				elif event.key == K_LEFT:
-					if down: LEFT_KEY_DOWN = True						
-					else: LEFT_KEY_DOWN = False
-				elif event.key == K_RIGHT:
-					if down: RIGHT_KEY_DOWN = True
-					else: RIGHT_KEY_DOWN = False
-				elif event.key == K_SPACE and down:					
-					PLAYER_SPRITE_GROUP.update(UP)			
-			
-			if event.type == MOUSEMOTION: 
-				m_x_pos, m_y_pos = event.pos
-			elif event.type == MOUSEBUTTONUP:
-				m_x_pos, m_y_pos = event.pos
-				for rect in FOREGROUND.scenery_rects:					
-					if rect.collidepoint(m_x_pos, m_y_pos):
-						print "yep"						
+		eventHandler(event_list)			
 		
-		if LEFT_KEY_DOWN and PLAYER.isCollidingLeft == False: 
-			PLAYER_SPRITE_GROUP.update(LEFT)
-			BACKGROUND.updatePos(LEFT, BACKGROUND_SPEED)
-			#FOREGROUND.updatePos(LEFT, FOREGROUND_SPEED)
-			FOREGROUND_SPRITE_GROUP.update(LEFT, FOREGROUND_SPEED)
-			AI_CHARACTER_SPRITE_GROUP.update(PLAYER_LEFT_ONLY)
-		if RIGHT_KEY_DOWN and PLAYER.isCollidingRight == False: 
-			PLAYER_SPRITE_GROUP.update(RIGHT)
-			BACKGROUND.updatePos(RIGHT, BACKGROUND_SPEED)
-			#FOREGROUND.updatePos(RIGHT, FOREGROUND_SPEED)
-			FOREGROUND_SPRITE_GROUP.update(RIGHT, FOREGROUND_SPEED)			
-			AI_CHARACTER_SPRITE_GROUP.update(PLAYER_RIGHT_ONLY)
-			
-		#character random action		
-		jump_action = randint(0, 125)
-		if ai_rand_act == 0: 
-			char_action = randint(0, 2)
-			if char_action == 2: ai_rand_act = 15
-			else: ai_rand_act = randint(5, 10)
-		else: ai_rand_act -= 1
-		if char_action == 2: 
-			AI_CHARACTER_SPRITE_GROUP.update(None)
-			if jump_action == 5: AI_CHARACTER_SPRITE_GROUP.update(UP)
-		else: 
-			AI_CHARACTER_SPRITE_GROUP.update(char_action)
-			if jump_action == 5: AI_CHARACTER_SPRITE_GROUP.update(UP)		
-		AI_CHARACTER_SPRITE_GROUP.update(None)
-		#/character random action		
+		AI_behavior_handler(AI_CHARACTER_SPRITE_GROUP)
 		
-		PLAYER_SPRITE_GROUP.update(None)		
+		updateAllGroups([AI_CHARACTER_SPRITE_GROUP, PLAYER_SPRITE_GROUP])		
+		
 		BACKGROUND.drawBackgrounds()		
-		pygame.draw.rect(SCREEN, GREY, ((0, FLOOR_HEIGHT), (SCREEN_WIDTH, SCREEN_HEIGHT-FLOOR_HEIGHT)) )		
-		
-		AI_CHARACTER_SPRITE_GROUP.draw(SCREEN)		
-		PLAYER_SPRITE_GROUP.draw(SCREEN)		
-		
-		#FOREGROUND.drawForegroundSurfaces()
-		FOREGROUND_SPRITE_GROUP.draw(SCREEN)
+		pygame.draw.rect(SCREEN, GREY, ((0, FLOOR_HEIGHT), (SCREEN_WIDTH, SCREEN_HEIGHT-FLOOR_HEIGHT)) )				
+		drawAllSprites([AI_CHARACTER_SPRITE_GROUP, PLAYER_SPRITE_GROUP, FOREGROUND_SPRITE_GROUP], SCREEN)		
 		
 		#display new frame
 		pygame.display.flip()
