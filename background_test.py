@@ -142,16 +142,58 @@ class PlayerObject(CharacterObject):
 	def update(self, direction):
 		super(PlayerObject, self).update(direction)
 
-class ForegroundSurfaceSprite(pygame.sprite.Sprite):
+class ScenerySprite(pygame.sprite.Sprite):
 	def __init__(self, screen, image, starting_position):
 		pygame.sprite.Sprite.__init__(self)
 		self.screen = screen
 		self.image = image
 		self.rect = self.image.get_rect(topleft=starting_position)
-		
+
 	def update(self, direction, speed):
 		if direction == LEFT: self.rect = self.rect.move(speed, 0)
-		elif direction == RIGHT: self.rect = self.rect.move(-speed, 0)
+		elif direction == RIGHT: self.rect = self.rect.move(-speed, 0) 
+
+class ForegroundSprite(ScenerySprite):
+	def __init__(self, screen, image, starting_position):
+		ScenerySprite.__init__(self, screen, image, starting_position)
+
+	def update(self, direction, speed):
+		super(ForegroundSprite, self).update(direction, speed)
+
+class BackgroundSprite(ScenerySprite):
+	def __init__(self, screen, image, starting_position):
+		ScenerySprite.__init__(self, screen, image, starting_position)
+
+	def update(self, direction, speed):
+		super(BackgroundSprite, self).update(direction, speed)	
+
+class BackgroundSurfacesManager(object):
+	def __init__(self, screen, image_list, starting_positions, scroll_limits=None ):
+		"""
+		Managing object for the sprite.Group for all background surfaces.
+		This is mainly to handle the unique movement involved with the backgrounds
+		which invovles either a 'wrapping', circular background, or a background with
+		left/right movement limits. Note that the order of the background images is
+		assumed to be left-most = 0th indexed image in image_list, right-most = nth
+
+		Obviously starting_positions will determine the actual represented order of
+		the images - as updates to those positions will be uniform (ie: an update of
+		50 pixels using the update method will shift all background images by 50
+		pixels in the desired direction)
+
+		The update method will handle calls to the sprite.Group.update method, along
+		with updating the image positions in the case of a wrapping background
+		"""
+		self.screen = screen
+		self.images = image_list
+		self.image_order = range(len(image_list))
+		self.positions = starting_positions
+		self.limits = scroll_limits
+		self.background_sprite_group = pygame.sprite.Group()
+		for index, image in enumerate(self.images): 
+			background_sprite_group.add(BackgroundSprite(self.screen, image, positions[index]))
+
+
 
 class BackgroundSurfaces(): #needs to be updated to handle a dynamic number of background images
 	def __init__(self, screen):
@@ -418,7 +460,7 @@ if __name__ == "__main__": #Globals
 	
 	FOREGROUND_SPRITE_GROUP = pygame.sprite.Group()
 	for index, forg_surf in enumerate(foreground_surfaces):
-		FOREGROUND_SPRITE_GROUP.add(ForegroundSurfaceSprite(SCREEN, forg_surf, FOREGROUND_ASSET_POSITIONS[index]))
+		FOREGROUND_SPRITE_GROUP.add(ForegroundSprite(SCREEN, forg_surf, FOREGROUND_ASSET_POSITIONS[index]))
 	
 	PLAYER = PlayerObject(SCREEN, player_object_surfaces, (SCREEN_WIDTH/2, FLOOR_HEIGHT))
 	PLAYER_SPRITE_GROUP = pygame.sprite.Group()
