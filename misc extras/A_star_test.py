@@ -138,11 +138,15 @@ def drawBoard(inp_grid):
 	#draw gridlines
 	for i in range(0, SCREEN_WIDTH, inp_grid.cell_size): pygame.draw.line(screen, WHITE, (i, 0), (i, SCREEN_HEIGHT), 2)
 	for i in range(0, SCREEN_HEIGHT, inp_grid.cell_size): pygame.draw.line(screen, WHITE, (0, i), (SCREEN_WIDTH, i), 2)
-	#/draw gridlines	
-			
-
+	#/draw gridlines
 			
 if __name__ == "__main__":
+
+	if len(argv) < 3:
+		print "USAGE: A_star_test.py <width> <height> <cell-side size>"
+		print "cells are square. For best results, make width and height multiples of the cell side size"
+		exit()
+
 	SCREEN_WIDTH = int(argv[1])
 	SCREEN_HEIGHT = int(argv[2])
 	CELL_SIZE = int(argv[3])
