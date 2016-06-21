@@ -187,67 +187,64 @@ class BackgroundSurfacesManager(object):
 		self.screen = screen
 		self.images = image_list 
 		self.image_order = range(len(image_list)) 	#in case of wrap=True, will form a circular list, indicating which image will be drawn in what order
-		self.positions = starting_positions 		#list of tuples [(x-coord, y-coord),...]
+		self.positions = starting_positions 		#list of tuples [(x-coord, y-coord),...]		
 		self.limits = scroll_limits 				#tuple of 2 x-values (left-limit, right-limit)
 		self.wrap = wrap 							#if true: background is circular in nature - will wrap back around
 		self.limit_test_position = None
-		if self.limits != None: self.limit_test_position = SCREEN_WIDTH/2
-		
+		self.x_movement_measure = 0 				
+		if self.limits != None: self.limit_test_position = SCREEN_WIDTH/2		
 		self.background_sprite_group = pygame.sprite.Group()
 		for index, image in enumerate(self.images): 
-			background_sprite_group.add(BackgroundSprite(self.screen, image, positions[index]))
+			self.background_sprite_group.add(BackgroundSprite(self.screen, image, self.positions[index]))
 			
 	def update(self, direction, speed):
 		"""updates all background sprites uniformly, unless doing so would violate a limit in self.limits""" 
-		if direction == LEFT:		
-		
 		if direction == LEFT:
-			if (self.limits != None): if (self.limits[1] <= (self.limit_test_position + speed)): return None
-			self.positions = [x+speed for x in self.positions]
-			
-			if self.positions[0] >= (-1)*SCREEN_WIDTH: 
-				self.panel_order = self.panel_order[1:] + self.panel_order[:1]
-				self.panel_x_pos = [x-SCREEN_WIDTH for x in self.panel_x_pos]
+			if (self.limits != None): 
+				if (self.limits[1] <= (self.limit_test_position + speed)): 
+					return None
+			self.background_sprite_group.update(direction, speed)			
+			self.x_movement_measure += speed			
+			if self.wrap: #if wrapping is enabled
+				if self.x_movement_measure > SCREEN_WIDTH:
+					self.x_movement_measure -= SCREEN_WIDTH
+					#get sprite with largest x-pos
+					sprite_x_pos = None
+					target_sprite = None
+					for sprite in self.background_sprite_group:
+						if sprite_x_pos == None: 
+							sprite_x_pos = sprite.rect.x
+							target_sprite = sprite
+						elif sprite_x_pos < sprite.rect.x: 
+							sprite_x_pos = sprite.rect.x
+							target_sprite = sprite
+					#farthest right sprite found, cycle
+					target_sprite.update(RIGHT, SCREEN_WIDTH*(len(self.images)))			
+		
 		elif direction == RIGHT: 
-			self.panel_x_pos = [x-speed for x in self.panel_x_pos]
-			if self.panel_x_pos[0] < (-1)*SCREEN_WIDTH*3:
-				self.panel_order = self.panel_order[-1:] + self.panel_order[:-1]
-				self.panel_x_pos = [x+SCREEN_WIDTH for x in self.panel_x_pos]
-
-class BackgroundSurfaces(): #needs to be updated to handle a dynamic number of background images
-	def __init__(self, screen):
-		self.screen = SCREEN
-		self.panel_order = [0, 1, 2, 3, 4]
-		self.panel_x_pos = [ (-1)*SCREEN_WIDTH*2, (-1)*SCREEN_WIDTH, 0, SCREEN_WIDTH, SCREEN_WIDTH*2]
-		self.surfaces = []
-		path = ASSETS_PATH
-		for i in range(5):			
-			fn = 'b' + str(i+1) + '.jpg'
-			full_path = os.path.join(path, fn)
-			surf = pygame.image.load(full_path).convert()
-			self.surfaces.append(surf)
+			if (self.limits != None): 
+				if (self.limits[0] >= (self.limit_test_position - speed)): 
+					return None
+			self.background_sprite_group.update(direction, speed)			
+			self.x_movement_measure -= speed			
+			if self.wrap: #if wrapping is enabled
+				if self.x_movement_measure < -SCREEN_WIDTH:
+					self.x_movement_measure += SCREEN_WIDTH
+					#get sprite with largest x-pos
+					sprite_x_pos = None
+					target_sprite = None
+					for sprite in self.background_sprite_group:
+						if sprite_x_pos == None: 
+							sprite_x_pos = sprite.rect.x
+							target_sprite = sprite
+						elif sprite_x_pos > sprite.rect.x: 
+							sprite_x_pos = sprite.rect.x
+							target_sprite = sprite
+					#farthest left sprite found, cycle
+					target_sprite.update(LEFT, SCREEN_WIDTH*(len(self.images)))
 	
-	def updatePos(self, direction, speed):
-		"""
-		direction type is int using RIGHT or LEFT
-		speed type is int
-		determines change in position per call
-		"""
-		if direction == LEFT: 
-			self.panel_x_pos = [x+speed for x in self.panel_x_pos]
-			if self.panel_x_pos[0] >= (-1)*SCREEN_WIDTH: 
-				self.panel_order = self.panel_order[1:] + self.panel_order[:1]
-				self.panel_x_pos = [x-SCREEN_WIDTH for x in self.panel_x_pos]
-		elif direction == RIGHT: 
-			self.panel_x_pos = [x-speed for x in self.panel_x_pos]
-			if self.panel_x_pos[0] < (-1)*SCREEN_WIDTH*3:
-				self.panel_order = self.panel_order[-1:] + self.panel_order[:-1]
-				self.panel_x_pos = [x+SCREEN_WIDTH for x in self.panel_x_pos]
-				
-	def drawBackgrounds(self):
-		for index, surface in enumerate(self.surfaces):
-			if abs( self.panel_x_pos[self.panel_order[index]] ) < SCREEN_WIDTH + 100:
-				self.screen.blit(surface, (self.panel_x_pos[self.panel_order[index]], 0))			
+	def draw(self, screen):
+		self.background_sprite_group.draw(screen)			
 	
 def loadImages(path, f_names):
 	"""returns a list of pygame.Surface objects, loaded from images at 'path' having a name in the 'f_names' list"""
@@ -284,12 +281,12 @@ def eventHandler(event_list):
 	
 	if LEFT_KEY_DOWN and PLAYER.isCollidingLeft == False: 
 			PLAYER_SPRITE_GROUP.update(LEFT)
-			BACKGROUND.updatePos(LEFT, BACKGROUND_SPEED)			
+			BACKGROUND_SURFACE_MANAGER.update(LEFT, BACKGROUND_SPEED)			
 			FOREGROUND_SPRITE_GROUP.update(LEFT, FOREGROUND_SPEED)
 			AI_CHARACTER_SPRITE_GROUP.update(PLAYER_LEFT_ONLY)
 	if RIGHT_KEY_DOWN and PLAYER.isCollidingRight == False: 
 			PLAYER_SPRITE_GROUP.update(RIGHT)
-			BACKGROUND.updatePos(RIGHT, BACKGROUND_SPEED)			
+			BACKGROUND_SURFACE_MANAGER.update(RIGHT, BACKGROUND_SPEED)		
 			FOREGROUND_SPRITE_GROUP.update(RIGHT, FOREGROUND_SPEED)			
 			AI_CHARACTER_SPRITE_GROUP.update(PLAYER_RIGHT_ONLY)
 				
@@ -465,18 +462,25 @@ if __name__ == "__main__": #Globals
 	(1400, 400),
 	(-800, 400),
 	(1800, 600)]
+	
+	BACKGROUND_ASSET_FNAMES = [
+	'b1.jpg',
+	'b2.jpg',
+	'b3.jpg',
+	'b4.jpg',
+	'b5.jpg']	
 	##
 	
 	
 	##loading images for objects	
 	foreground_surfaces = loadImages( ASSETS_PATH, FOREGROUND_ASSET_FNAMES )
+	background_surfaces = loadImages( ASSETS_PATH, BACKGROUND_ASSET_FNAMES )
 	player_object_surfaces = loadImages( ASSETS_PATH, PLAYER_ASSET_FNAMES )
 	AI_character_object_surfaces = loadImages( ASSETS_PATH, AI_CHARACTER_ASSET_FNAMES )
 	##
 	
 	##instatiate objects
-	BACKGROUND = BackgroundSurfaces(SCREEN)	#old, should be switched to sprites	
-	
+	BACKGROUND_SURFACE_MANAGER = BackgroundSurfacesManager(SCREEN, background_surfaces, [(-1600, 0), (-800, 0), (0, 0), (800, 0), (1600, 0)], True, None )		
 	FOREGROUND_SPRITE_GROUP = pygame.sprite.Group()
 	for index, forg_surf in enumerate(foreground_surfaces):
 		FOREGROUND_SPRITE_GROUP.add(ForegroundSprite(SCREEN, forg_surf, FOREGROUND_ASSET_POSITIONS[index]))
@@ -520,7 +524,7 @@ if __name__ == "__main__": #game loop
 		
 		updateAllGroups([AI_CHARACTER_SPRITE_GROUP, PLAYER_SPRITE_GROUP])		
 		
-		BACKGROUND.drawBackgrounds()		
+		BACKGROUND_SURFACE_MANAGER.draw(SCREEN)				
 		pygame.draw.rect(SCREEN, GREY, ((0, FLOOR_HEIGHT), (SCREEN_WIDTH, SCREEN_HEIGHT-FLOOR_HEIGHT)) )				
 		drawAllSprites([AI_CHARACTER_SPRITE_GROUP, PLAYER_SPRITE_GROUP, FOREGROUND_SPRITE_GROUP], SCREEN)		
 		
