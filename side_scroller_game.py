@@ -125,7 +125,7 @@ class CharacterObject(pygame.sprite.Sprite):
 		#re-set collision rects based on new character object self.rect location
 		self.bottom_collision_rect = pygame.Rect( self.rect.bottomleft, ( self.rect.width, self.fall_speed ) ) 
 		self.right_side_collision_rect = pygame.Rect( self.rect.topright, (RIGHT_RECT_WIDTH, self.rect.height-2) )
-		self.left_side_collision_rect = pygame.Rect( (self.rect.left - LEFT_RECT_WIDTH, self.rect.top), (LEFT_RECT_WIDTH, self.rect.height-2) )
+		self.left_side_collision_rect = pygame.Rect( (self.rect.left - LEFT_RECT_WIDTH, self.rect.top), (LEFT_RECT_WIDTH, self.rect.height-2) )		
 	
 class AICharacterObject(CharacterObject):
 	def __init__(self, screen, images, starting_position, ai_type = 0):
@@ -167,28 +167,42 @@ class PlayerObject(CharacterObject):
 			direction = LEFT
 		elif direction == PLAYER_RIGHT_ONLY:
 			self.pos = (self.pos[0] + move_speed, self.pos[1])
-			direction = RIGHT
-		
+			direction = RIGHT		
 		super(PlayerObject, self).update(direction)
 
 class textObject(pygame.sprite.Sprite):
-	def __init__(self, screen, text, duration, type, font_color, font_size, position, back_color=None):
-		pygame.sprite.Sprite.__init__(self)
+	def __init__(self, screen, text, duration, type, font, font_color, font_size, position, back_color=None):
+		pygame.sprite.Sprite.__init__(self)		
 		self.screen = screen
-		self.font = pygame.font.SysFont("Arial", font_size)
-		self.image = self.font.render(text, False, BLACK).convert_alpha()
-		self.rect = self.image.get_rect()
+		self.font = pygame.font.SysFont(font, font_size)
+		self.font_image = self.font.render(text, False, BLACK).convert()				
+		self.rect = self.font_image.get_rect()	
+		size = (self.rect.right + 6, self.rect.bottom + 6)
+		self.image = pygame.Surface(size, pygame.SRCALPHA).convert()
+		self.image.fill(WHITE)
+		self.image.blit(self.font_image, self.rect.topleft)
+		self.image.blit(self.font_image, (self.rect.left+6, self.rect.top))
+		self.image.blit(self.font_image, (self.rect.left, self.rect.top+6))
+		self.image.blit(self.font_image, (self.rect.left+6, self.rect.top+6))
+		self.font_image = self.font.render(text, False, GOLD).convert()
+		self.image.blit(self.font_image, (self.rect.left+3, self.rect.top+3))				
 		self.rect = self.rect.move(position)		
 		self.rect.center = position		
 		self.type = type
+
+		self.image.set_colorkey(WHITE)
 		
 		self.font_color = font_color
 		self.font_size = font_size
 		self.back_color = back_color
 		self.duration = duration
 		
-	def update(self):		
+		
+		
+	def update(self):
+		
 		if self.type == POINTS_FADING:			
+			self.image.set_alpha(self.image.get_alpha()-10)
 			self.rect.top = self.rect.top - 5
 			self.duration -= 1			
 					
@@ -329,6 +343,7 @@ def eventHandler(event_list):
 	"""
 	global LEFT_KEY_DOWN
 	global RIGHT_KEY_DOWN
+	global CURR_FONT
 	for event in event_list:		
 		#KEYPRESS EVENTS
 		if event.type == pygame.QUIT: sys.exit(0)			
@@ -348,8 +363,9 @@ def eventHandler(event_list):
 			m_x_pos, m_y_pos = event.pos
 		elif event.type == MOUSEBUTTONUP:
 			m_x_pos, m_y_pos = event.pos
-			#TESTING TEXT - NOT PERMANENT, TO BE REMOVED
-			create_And_AddTextSpriteToGroup("9999", 10, POINTS_FADING, BLACK, 20, (m_x_pos, m_y_pos), None, TEXT_SPRITE_GROUP_POINTS) 
+			#TESTING TEXT - NOT PERMANENT, TO BE REMOVED						
+			create_And_AddTextSpriteToGroup("123456789", 20, POINTS_FADING, "impact", GOLD, 40, (m_x_pos, m_y_pos), None, TEXT_SPRITE_GROUP_POINTS) 			
+			
 			#/TESTING
 	
 	if LEFT_KEY_DOWN and PLAYER.isCollidingLeft == False: 
@@ -390,8 +406,8 @@ def AI_behavior_handler(AI_Character_list):
 			ai_character.update(char_action[index])
 			if isJumping == randint(0, 125): ai_character.update(UP)	
 			
-def create_And_AddTextSpriteToGroup(text, duration, type, font_color, font_size, position, back_color, sprite_group):
-	text_sprite = textObject(SCREEN, text, duration, type, font_color, font_size, position, back_color)	
+def create_And_AddTextSpriteToGroup(text, duration, type, font, font_color, font_size, position, back_color, sprite_group):
+	text_sprite = textObject(SCREEN, text, duration, type, font, font_color, font_size, position, back_color)	
 	sprite_group.add(text_sprite)	
 
 def spriteUpdateAndRemove_Text(text_sprite_group):
@@ -420,7 +436,20 @@ if __name__ == "__main__": #Globals
 	BLUE = (0, 0, 255)
 	LIGHT_BLUE = (125, 125, 255)
 	BLACK = (0, 0, 0)
+	GOLD = (255, 215, 0)
+	WHITE = (255, 255, 255)
 	##/colors
+	
+	##
+	#NOTE: THESE FONTS DO NOT WORK:
+	#anything ending in 'bold' (FONT_LIST[CURR_FONT][-4:] == "bold")	
+	#anything ending in 'italic' (FONT_LIST[CURR_FONT][-6:] == "italic")
+	#cambria
+	#yugothic
+	FONT_LIST = pygame.font.get_fonts()
+	CURR_FONT = 0
+	FONT_LIMIT = len(FONT_LIST)
+	##
 	
 	##TextObj types
 	POINTS_FADING = 0
@@ -616,6 +645,9 @@ if __name__ == "__main__": #game loop
 		pygame.draw.rect(SCREEN, GREY, ((0, FLOOR_HEIGHT), (SCREEN_WIDTH, SCREEN_HEIGHT-FLOOR_HEIGHT)) )				
 		#/temp floor
 		drawAllSprites([AI_CHARACTER_SPRITE_GROUP, PLAYER_SPRITE_GROUP, FOREGROUND_SPRITE_GROUP, TEXT_SPRITE_GROUP_POINTS], SCREEN)				
+		
+		#for sprite in TEXT_SPRITE_GROUP_POINTS.sprites():
+		#	pygame.draw.rect(SCREEN, BLUE, sprite.rect)
 		
 		#display new frame
 		pygame.display.flip()
