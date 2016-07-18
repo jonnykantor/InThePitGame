@@ -128,19 +128,27 @@ class CharacterObject(pygame.sprite.Sprite):
 		self.left_side_collision_rect = pygame.Rect( (self.rect.left - LEFT_RECT_WIDTH, self.rect.top), (LEFT_RECT_WIDTH, self.rect.height-2) )		
 	
 class AICharacterObject(CharacterObject):
-	def __init__(self, screen, images, starting_position, ai_type = 0):
-		CharacterObject.__init__(self, screen, images, starting_position)
+	def __init__(self, screen, images, starting_position, ai_type, x_limits):
+		CharacterObject.__init__(self, screen, images, starting_position, x_limits)
 		self.char_type = ai_type
 	
 	def update(self, direction, left_side_collision_list, right_side_collision_list, bottom_collision_list):
 		move_speed = BACKGROUND_SPEED
-		if direction == LEFT and self.isCollidingLeft == False: 					
-			self.pos = (self.pos[0] - move_speed, self.pos[1])
-		elif direction == RIGHT and self.isCollidingRight == False: 			
-			self.pos = (self.pos[0] + move_speed, self.pos[1])
+		if direction == LEFT and self.isCollidingLeft == False:
+			if self.x_movement_limit_left == None:				 
+				self.pos = (self.pos[0] - move_speed, self.pos[1])
+			elif self.x_movement_limit_left + X_LIMIT_TEST_POS < self.pos[0] - move_speed: 
+				self.pos = (self.pos[0] - move_speed, self.pos[1])
+			else: direction = None
+		elif direction == RIGHT and self.isCollidingRight == False:
+			if self.x_movement_limit_right == None: 
+				self.pos = (self.pos[0] + move_speed, self.pos[1])
+			elif self.x_movement_limit_right + X_LIMIT_TEST_POS > self.pos[0] + move_speed: 
+				self.pos = (self.pos[0] + move_speed, self.pos[1])
+			else: direction = None
 		elif direction == PLAYER_LEFT_ONLY: 
 			self.pos = (self.pos[0] + move_speed, self.pos[1])
-			direction = None
+			direction = None			
 		elif direction == PLAYER_RIGHT_ONLY: 
 			self.pos = (self.pos[0] - move_speed, self.pos[1])
 			direction = None
@@ -163,9 +171,11 @@ class PlayerObject(CharacterObject):
 			elif self.pos[0] < SCREEN_WIDTH/2:
 				self.pos = (SCREEN_WIDTH/2, self.pos[1])
 		elif direction == PLAYER_LEFT_ONLY:
-			self.pos = (self.pos[0] - move_speed, self.pos[1])
-			direction = LEFT
+			if self.pos[0] - move_speed > move_speed:
+				self.pos = (self.pos[0] - move_speed, self.pos[1])
+				direction = LEFT
 		elif direction == PLAYER_RIGHT_ONLY:
-			self.pos = (self.pos[0] + move_speed, self.pos[1])
-			direction = RIGHT		
+			if self.pos[0] + move_speed < SCREEN_WIDTH-move_speed:
+				self.pos = (self.pos[0] + move_speed, self.pos[1])
+				direction = RIGHT		
 		super(PlayerObject, self).update(direction, left_side_collision_list, right_side_collision_list, bottom_collision_list)
