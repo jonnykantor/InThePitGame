@@ -1,12 +1,5 @@
 import pygame, os
 
-def loadImages(path, f_names):
-	"""returns a list of pygame.Surface objects, loaded from images at 'path' having a name in the 'f_names' list"""
-	ret_surfaces = []
-	for f_name in f_names:		
-		ret_surfaces.append( pygame.image.load(os.path.join(path, f_name)).convert_alpha() )
-	return ret_surfaces
-
 """GLOBALS"""
 
 ##directions for movement
@@ -44,6 +37,7 @@ FONT_LIMIT = len(FONT_LIST)
 
 ##TextObj types
 POINTS_FADING = 0
+SPEECH_BUBBLE = 1
 ##
 
 ##speeds
@@ -93,12 +87,11 @@ DOWN_3 	= 19
 DEFAULT_AI_TYPE = 0 #debugging ai type
 ##
 
-##SCREEN surface attributes/objects (and also the Clock)
+##Screen attributes
 SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600	
+SCREEN_HEIGHT = 600
 SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 SCREEN_RECT = SCREEN.get_rect()
-CLOCK = pygame.time.Clock()		
 ##
 
 ##Bools for determining whether a key is held down
@@ -134,8 +127,8 @@ AI_CHARACTER_ASSET_FNAMES = [
 'red_death_sprite_right_4.png'
 ]
 
-FOREGROUND_ASSET_FNAMES = [
-'vending.png', 
+FOREGROUND_ASSET_FNAMES = ['vending.png'] * 15
+''', 
 'vending.png', 
 'vending.png', 
 'vending.png',
@@ -151,7 +144,8 @@ FOREGROUND_ASSET_FNAMES = [
 'vending.png', 
 'vending.png', 
 'vending.png']
-
+'''
+#positions indicate top-left corner of rectangle
 FOREGROUND_ASSET_POSITIONS = [
 (650, 400),
 (100, 200),
