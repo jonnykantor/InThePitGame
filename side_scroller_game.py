@@ -1,4 +1,5 @@
 import pygame, math, sys, os
+from pygame import gfxdraw
 from pygame.locals import *
 from random import randint
 from sys import argv
@@ -12,8 +13,8 @@ from Text_Object import *
 	
 def event_LeftKeyPress():
 	global X_LIMIT_TEST_POS
-	background_left_limit_hit, X_LIMIT_TEST_POS = BACKGROUND_SURFACE_MANAGER.update(LEFT, BACKGROUND_SPEED, PLAYER)
-	
+	background_left_limit_hit, X_LIMIT_TEST_POS = BACKGROUND_SURFACE_MANAGER.update(LEFT, BACKGROUND_SPEED, PLAYER)	
+
 	every_character_rect_list = [x.rect for x in EVERY_CHARACTER_SPRITE_GROUP]					
 	foreground_rect_list = [x.rect for x in FOREGROUND_SPRITE_GROUP]
 
@@ -26,8 +27,8 @@ def event_LeftKeyPress():
 	
 def event_RightKeyPress():
 	global X_LIMIT_TEST_POS
-	background_right_limit_hit, X_LIMIT_TEST_POS = BACKGROUND_SURFACE_MANAGER.update(RIGHT, BACKGROUND_SPEED, PLAYER)
-	
+	background_right_limit_hit, X_LIMIT_TEST_POS = BACKGROUND_SURFACE_MANAGER.update(RIGHT, BACKGROUND_SPEED, PLAYER)	
+
 	every_character_rect_list = [x.rect for x in EVERY_CHARACTER_SPRITE_GROUP]					
 	foreground_rect_list = [x.rect for x in FOREGROUND_SPRITE_GROUP]
 
@@ -69,7 +70,8 @@ def eventHandler(event_list):
 		elif event.type == MOUSEBUTTONUP:
 			m_x_pos, m_y_pos = event.pos
 			#TESTING TEXT - NOT PERMANENT, TO BE REMOVED						
-			create_And_AddTextSpriteToGroup("123456789", 20, POINTS_FADING, "impact", GREEN, 40, (m_x_pos, m_y_pos), BLACK, WHITE, TEXT_SPRITE_GROUP_POINTS) 			
+			#create_And_AddTextSpriteToGroup("123456789", 20, POINTS_FADING, "impact", GREEN, 40, (m_x_pos, m_y_pos), BLACK, WHITE, TEXT_SPRITE_GROUP_POINTS)
+			create_And_AddTextSpriteToGroup("I am a pie! You must eat me now, jerk!", 120, SPEECH_BUBBLE, "impact", BLACK, 40, (m_x_pos, m_y_pos), BLACK, LIGHT_BLUE, TEXT_SPRITE_GROUP_POINTS) 			 			
 			
 			#/TESTING
 	
@@ -128,6 +130,13 @@ def spriteUpdateAndRemove_Text(text_sprite_group):
 			text_sprite_group.remove(sprite)		
 	text_sprite_group.update()
 				
+def loadImages(path, f_names):
+	"""returns a list of pygame.Surface objects, loaded from images at 'path' having a name in the 'f_names' list"""
+	ret_surfaces = []
+	for f_name in f_names:		
+		ret_surfaces.append( pygame.image.load(os.path.join(path, f_name)).convert_alpha() )
+	return ret_surfaces
+
 if __name__ == "__main__": #Globals
 	
 	##loading images for objects	
@@ -139,18 +148,21 @@ if __name__ == "__main__": #Globals
 	
 	##instatiate sprite and sprite group objects
 	TEXT_SPRITE_GROUP_POINTS = pygame.sprite.Group()
-	BACKGROUND_SURFACE_MANAGER = BackgroundSurfacesManager(SCREEN, background_surfaces, [(-1600, 0), (-800, 0), (0, 0), (800, 0), (1600, 0)], True, (-2000, 2800) )		
+		#ALL BACKGROUND PANELS ASSUMED TO HAVE THE SAME WIDTH - THIS IS CRUCIAL - ALL MUST HAVE THE SAME WIDTH!
+
+	if len(background_surfaces) > 0: pass
+
+	BACKGROUND_SURFACE_MANAGER = BackgroundSurfacesManager(SCREEN, background_surfaces, [(-1600, 0), (-800, 0), (0, 0), (800, 0), (1600, 0)], False, X_SCROLL_LIMITS )		
 	
 	FOREGROUND_SPRITE_GROUP = pygame.sprite.Group()
-	for index, forg_surf in enumerate(foreground_surfaces):
-		FOREGROUND_SPRITE_GROUP.add(ForegroundSprite(SCREEN, forg_surf, FOREGROUND_ASSET_POSITIONS[index]))
+	for index, forg_surf in enumerate(foreground_surfaces): FOREGROUND_SPRITE_GROUP.add(ForegroundSprite(SCREEN, forg_surf, FOREGROUND_ASSET_POSITIONS[index]))
 	
 	PLAYER = PlayerObject(SCREEN, player_object_surfaces, (SCREEN_WIDTH/2, FLOOR_HEIGHT))
 	PLAYER_SPRITE_GROUP = pygame.sprite.Group()
 	PLAYER_SPRITE_GROUP.add(PLAYER)
 	
 	AI_CHARACTER_SPRITE_GROUP = pygame.sprite.Group()
-	for i in range(4): AI_CHARACTER_SPRITE_GROUP.add( AICharacterObject(SCREEN, AI_character_object_surfaces, (SCREEN_WIDTH/3 + randint(-50, 50), FLOOR_HEIGHT))) 		
+	for i in range(4): AI_CHARACTER_SPRITE_GROUP.add( AICharacterObject(SCREEN, AI_character_object_surfaces, (SCREEN_WIDTH/3 + randint(-50, 50), FLOOR_HEIGHT), DEFAULT_AI_TYPE, X_SCROLL_LIMITS)) 		
 	EVERY_CHARACTER_SPRITE_GROUP = AI_CHARACTER_SPRITE_GROUP.copy()
 	EVERY_CHARACTER_SPRITE_GROUP.add(PLAYER)
 	##	
@@ -161,6 +173,7 @@ if __name__ == "__main__": #Globals
 	
 if __name__ == "__main__": #game loop
 	pygame.init()
+	CLOCK = pygame.time.Clock()
 	while 1:
 		time_elapsed = CLOCK.tick(30)
 		
@@ -179,6 +192,6 @@ if __name__ == "__main__": #game loop
 		
 		#for sprite in TEXT_SPRITE_GROUP_POINTS.sprites():
 		#	pygame.draw.rect(SCREEN, BLUE, sprite.rect)
-		
+				
 		#display new frame
 		pygame.display.flip()
