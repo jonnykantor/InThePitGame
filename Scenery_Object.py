@@ -53,8 +53,8 @@ class BackgroundSurfacesManager(object):
 			if player_object.pos[0] == SCREEN_WIDTH/2:	
 				self.background_sprite_group.update(direction, speed)			
 				self.x_movement_measure += speed						
-				if self.limit_test_position != None: self.limit_test_position += speed
-			
+				if self.limit_test_position != None: self.limit_test_position += speed			
+
 				if self.wrap: #if wrapping is enabled
 					if self.x_movement_measure > SCREEN_WIDTH:
 						self.x_movement_measure -= SCREEN_WIDTH
