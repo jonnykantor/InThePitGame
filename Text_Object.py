@@ -2,7 +2,7 @@ import pygame
 from Globals import *
 
 class textObject(pygame.sprite.Sprite):
-	def __init__(self, screen, text, duration, text_obj_type, font, font_color, font_size, position, back_color=None, colorkey_color=WHITE, argument_vector=None):
+	def __init__(self, screen, text, duration, text_obj_type, font, font_color, font_size, position, back_color, colorkey_color, argument_vector):
 		"""
 		screen = main surface
 		text = string of text to be displayed
@@ -37,6 +37,8 @@ class textObject(pygame.sprite.Sprite):
 			self.image.blit(self.font_image, (self.rect.left+3, self.rect.top+3))
 			self.image.set_colorkey(colorkey_color)
 
+		#This is the speech bubble properties specification
+		'''!!! Speech Bubble argument vector layout [isLeftOriented, isButton, borderSize] !!!'''
 		if self.text_obj_type == SPEECH_BUBBLE:
 			self.text_array = text.split()
 			self.lines_array = []
@@ -68,7 +70,7 @@ class textObject(pygame.sprite.Sprite):
 				
 			radius = height/(len(self.line_surfaces)+1)
 
-			self.image = makeSpeechBubble(width, height, radius, False)
+			self.image = makeSpeechBubble(width, height, radius, argument_vector[0], argument_vector[1], back_color, font_color, argument_vector[2], colorkey_color)
 			self.rect = self.image.get_rect()
 			prev_surface_height = 0
 			for index, text_surface_atribs in enumerate(self.line_surfaces):
@@ -100,7 +102,7 @@ class textObject(pygame.sprite.Sprite):
 			self.duration -= 1
 			if self.duration < 10: self.image.set_alpha(self.image.get_alpha()-25)	
 
-def makeSpeechBubble(width, height, radius, isLeftOriented, background_color=WHITE, border_color=BLACK, border_size=5, colorkey_color=LIGHT_BLUE):
+def makeSpeechBubble(width, height, radius, isLeftOriented, isButton, background_color, border_color, border_size, colorkey_color):
 	"""
 	Takes the width/height/radius arguments and returns a surface with a speech bubble drawn to it
 	default background color is white, border color is black, colorkey is light blue, border size is 5
@@ -133,11 +135,11 @@ def makeSpeechBubble(width, height, radius, isLeftOriented, background_color=WHI
 	pygame.draw.line(image, border_color, (width+(2*radius) - border_size/2, radius), (width+(2*radius) - border_size/2, radius+height), border_size)
 	pygame.draw.line(image, border_color, (border_size/2, radius-1), (border_size/2, height+radius), border_size)
 	pygame.draw.line(image, border_color, (radius-1, height+(2*radius) - border_size/2), (width+radius, height+(2*radius) - border_size/2), border_size)
-	if isLeftOriented:
-			pygame.draw.polygon(image, background_color, [(radius, height + 2*radius - border_size),(radius, height + 3*radius),(2*radius, height + 2*radius - border_size)], 0)
-			pygame.draw.line(image, border_color, (radius, height + 2*radius - border_size), (radius, height + 3*radius), border_size)
-			pygame.draw.line(image, border_color, (radius, height + 3*radius), (2*radius, height + 2*radius - border_size/2), border_size)
-	else:
+	if (isLeftOriented == True) and not (isButton):
+		pygame.draw.polygon(image, background_color, [(radius, height + 2*radius - border_size),(radius, height + 3*radius),(2*radius, height + 2*radius - border_size)], 0)
+		pygame.draw.line(image, border_color, (radius, height + 2*radius - border_size), (radius, height + 3*radius), border_size)
+		pygame.draw.line(image, border_color, (radius, height + 3*radius), (2*radius, height + 2*radius - border_size/2), border_size)
+	elif (isLeftOriented == False) and not (isButton): #therefore is right-oriented
 		pygame.draw.polygon(image, background_color, [(width, height + 2*radius - border_size),(width + radius, height + 3*radius),(width + radius, height + 2*radius - border_size)], 0)
 		pygame.draw.line(image, border_color, (width + radius, height + 2*radius - border_size), (width+ radius, height + 3*radius), border_size)
 		pygame.draw.line(image, border_color, (width + radius, height + 3*radius), (width, height + 2*radius - border_size/2), border_size)
