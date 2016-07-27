@@ -10,6 +10,7 @@ from Globals import *
 from Character_Object import *
 from Scenery_Object import *
 from Text_Object import *
+from VerticalButtonsMenu import *
 	
 def event_LeftKeyPress():
 	global X_LIMIT_TEST_POS
@@ -55,7 +56,10 @@ def eventHandler(event_list):
 			foreground_rect_list = [x.rect for x in FOREGROUND_SPRITE_GROUP]						
 			
 			down = event.type == KEYDOWN		
-			if event.key == K_ESCAPE and not down: sys.exit(0)
+			if event.key == K_ESCAPE and not down: #sys.exit(0)
+				MAIN_MENU_OBJ.activateMenu()
+				RIGHT_KEY_DOWN = False
+				LEFT_KEY_DOWN = False
 			elif event.key == K_LEFT:
 				if down: LEFT_KEY_DOWN = True						
 				else: LEFT_KEY_DOWN = False
@@ -70,8 +74,8 @@ def eventHandler(event_list):
 		elif event.type == MOUSEBUTTONUP:
 			m_x_pos, m_y_pos = event.pos
 			#TESTING TEXT - NOT PERMANENT, TO BE REMOVED						
-			#create_And_AddTextSpriteToGroup("123456789", 20, POINTS_FADING, "impact", GREEN, 40, (m_x_pos, m_y_pos), BLACK, WHITE, TEXT_SPRITE_GROUP_POINTS)
-			create_And_AddTextSpriteToGroup("I am a pie! You must eat me now, jerk!", 120, SPEECH_BUBBLE, "impact", BLACK, 40, (m_x_pos, m_y_pos), BLACK, LIGHT_BLUE, TEXT_SPRITE_GROUP_POINTS) 			 			
+			create_And_AddTextSpriteToGroup("123456789", 20, POINTS_FADING, "impact", GREEN, 40, (m_x_pos, m_y_pos), BLACK, WHITE, None, TEXT_SPRITE_GROUP_POINTS)
+			#create_And_AddTextSpriteToGroup("I am a pie! You must eat me now, jerk!", 120, SPEECH_BUBBLE, "impact", BLACK, 40, (m_x_pos, m_y_pos), WHITE, LIGHT_BLUE, [False, True, 5], TEXT_SPRITE_GROUP_POINTS) 			 			
 			
 			#/TESTING
 	
@@ -120,8 +124,8 @@ def AI_behavior_handler(AI_Character_list):
 			ai_character.update(char_action[index], every_character_rect_list, every_character_rect_list, foreground_rect_list)
 			if isJumping == randint(0, 125): ai_character.update(UP, every_character_rect_list, every_character_rect_list, foreground_rect_list)	
 			
-def create_And_AddTextSpriteToGroup(text, duration, type, font, font_color, font_size, position, back_color, colorkey_color, sprite_group):
-	text_sprite = textObject(SCREEN, text, duration, type, font, font_color, font_size, position, back_color, colorkey_color)	
+def create_And_AddTextSpriteToGroup(text, duration, type, font, font_color, font_size, position, back_color, colorkey_color, argument_vector, sprite_group):
+	text_sprite = textObject(SCREEN, text, duration, type, font, font_color, font_size, position, back_color, colorkey_color, argument_vector)	
 	sprite_group.add(text_sprite)	
 
 def spriteUpdateAndRemove_Text(text_sprite_group):
@@ -138,12 +142,31 @@ def loadImages(path, f_names):
 	return ret_surfaces
 
 if __name__ == "__main__": #Globals
-	
+	pygame.init()
 	##loading images for objects	
 	foreground_surfaces 			= loadImages( ASSETS_PATH, FOREGROUND_ASSET_FNAMES )
 	background_surfaces 			= loadImages( ASSETS_PATH, BACKGROUND_ASSET_FNAMES )
 	player_object_surfaces 			= loadImages( ASSETS_PATH, PLAYER_ASSET_FNAMES )
 	AI_character_object_surfaces 	= loadImages( ASSETS_PATH, AI_CHARACTER_ASSET_FNAMES )
+	##
+
+	##main menu instantiation
+	MAIN_MENU_OBJ = VerticalButtonsMenu(SCREEN,
+										["Play", "Quit"],
+										[BACK_TO_GAME, QUIT],
+										"impact",										
+										50,
+										background_surfaces[0],
+										WHITE,
+										BLACK,
+										GREY,
+										LIGHT_BLUE,
+										5,
+										15,
+										CENTER,
+										True,
+										WHITE,
+										DARK_GREY)
 	##
 	
 	##instatiate sprite and sprite group objects
@@ -172,26 +195,20 @@ if __name__ == "__main__": #Globals
 	char_action = [2] * len(AI_CHARACTER_SPRITE_GROUP)
 	
 if __name__ == "__main__": #game loop
-	pygame.init()
-	CLOCK = pygame.time.Clock()
+	
+	MAIN_MENU_OBJ.activateMenu()	
 	while 1:
 		time_elapsed = CLOCK.tick(30)
 		
 		event_list = pygame.event.get()
 		eventHandler(event_list)			
 		
-		AI_behavior_handler(AI_CHARACTER_SPRITE_GROUP)
-		
-		updateAllGroups([AI_CHARACTER_SPRITE_GROUP, PLAYER_SPRITE_GROUP])		
-		
+		AI_behavior_handler(AI_CHARACTER_SPRITE_GROUP)		
+		updateAllGroups([AI_CHARACTER_SPRITE_GROUP, PLAYER_SPRITE_GROUP])				
 		BACKGROUND_SURFACE_MANAGER.draw(SCREEN) #should be added to drawAllSprites once a sprite floor is added
 		#temp floor
 		pygame.draw.rect(SCREEN, GREY, ((0, FLOOR_HEIGHT), (SCREEN_WIDTH, SCREEN_HEIGHT-FLOOR_HEIGHT)) )				
 		#/temp floor
-		drawAllSprites([AI_CHARACTER_SPRITE_GROUP, PLAYER_SPRITE_GROUP, FOREGROUND_SPRITE_GROUP, TEXT_SPRITE_GROUP_POINTS], SCREEN)				
-		
-		#for sprite in TEXT_SPRITE_GROUP_POINTS.sprites():
-		#	pygame.draw.rect(SCREEN, BLUE, sprite.rect)
-				
+		drawAllSprites([AI_CHARACTER_SPRITE_GROUP, PLAYER_SPRITE_GROUP, FOREGROUND_SPRITE_GROUP, TEXT_SPRITE_GROUP_POINTS], SCREEN)								
 		#display new frame
 		pygame.display.flip()
