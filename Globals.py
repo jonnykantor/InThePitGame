@@ -2,19 +2,28 @@ import pygame, os
 
 """GLOBALS"""
 
-##directions for movement
+##directions for movement, also used for alignment
 LEFT = 0
 RIGHT = 1
 DOWN = 2
 UP = 3
+CENTER = 4
 #next two are to avoid animation of non-player objects 
 #when they are only moving relative to player object movement
 PLAYER_LEFT_ONLY = 4 
 PLAYER_RIGHT_ONLY = 5
 ##/directions for movement
 
+##Menu button commands:
+BACK_TO_GAME = 0
+QUIT = 1
+CONTROLS = 2
+OPTIONS = 3
+##
+
 ##colors
 GREY = (128, 128, 128)
+DARK_GREY = (50, 50, 50)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
@@ -22,6 +31,7 @@ LIGHT_BLUE = (125, 125, 255)
 BLACK = (0, 0, 0)
 GOLD = (255, 215, 0)
 WHITE = (255, 255, 255)
+YELLOW = (255, 255, 0)
 ##/colors
 
 ##
@@ -87,11 +97,12 @@ DOWN_3 	= 19
 DEFAULT_AI_TYPE = 0 #debugging ai type
 ##
 
-##Screen attributes
+##Screen attributes and clock
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 SCREEN_RECT = SCREEN.get_rect()
+CLOCK = pygame.time.Clock()
 ##
 
 ##Bools for determining whether a key is held down
