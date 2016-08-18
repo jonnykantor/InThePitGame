@@ -5,6 +5,10 @@ from Globals import *
 
 class CharacterObject(pygame.sprite.Sprite):
 	def __init__(self, screen, images, starting_position, x_limits=None):
+		"""Super class for player and non-player characters in the game
+		CharacterObject class is mainly to handle animation and collision 
+		detectionrather than repositioning of pc/npc objects - except for 
+		vertical movement (jumping)"""
 		pygame.sprite.Sprite.__init__(self)
 		
 		self.x_movement_limit_left = None
@@ -16,7 +20,8 @@ class CharacterObject(pygame.sprite.Sprite):
 		self.screen = screen
 		self.images = images
 		self.image = images[0]		
-		self.pos = starting_position		
+		self.pos = starting_position
+		self.facing_direction = RIGHT		
 		
 		self.rect = self.image.get_rect()		
 		self.rect.center = self.pos		
@@ -39,6 +44,9 @@ class CharacterObject(pygame.sprite.Sprite):
 		self.isCollidingRight = False
 		self.isCollidingLeft = False
 		self.isCollidingBottom = False
+
+		self.collisionObjectLeft = -1
+		self.collisionObjectRight = -1
 		
 		#individual counters for individual image list current image position
 		self.idle_ind 	= 0
@@ -56,7 +64,9 @@ class CharacterObject(pygame.sprite.Sprite):
 	def update(self, direction, left_side_collision_list, right_side_collision_list, bottom_collision_list):
 		
 		collide_left = self.left_side_collision_rect.collidelist(left_side_collision_list) 
+		if collide_left > -1: self.collisionObjectLeft = left_side_collision_list[collide_left]
 		collide_right = self.right_side_collision_rect.collidelist(right_side_collision_list) 
+		if collide_right > -1: self.collisionObjectRight = right_side_collision_list[collide_right]
 		collide_bottom = self.bottom_collision_rect.collidelist(bottom_collision_list) 
 		
 		#test for collisions
@@ -72,27 +82,17 @@ class CharacterObject(pygame.sprite.Sprite):
 			self.jumpCounter = 5					
 		
 		if direction == LEFT:
-			self.right_ind = 0			
-			if collide_left == -1: #if not colliding to the left
-				self.isCollidingLeft = False
-				#update image for animation
-				if self.left_ind == 15: self.left_ind = 0 
-				else: self.left_ind += 1
-				self.image = self.left_images[self.left_ind/5]					
-			else: #colliding left				
-				self.isCollidingLeft = True
+			self.facing_direction = LEFT
+			if self.left_ind == 15: self.left_ind = 0 
+			else: self.left_ind += 1
+			self.image = self.left_images[self.left_ind/5]					
 		elif direction == RIGHT:
-			self.left_ind = 0
-			if collide_right == -1: #if not colliding tot he right
-				self.isCollidingRight = False
-				#update image for animation
-				if self.right_ind == 15: self.right_ind = 0
-				else: self.right_ind += 1
-				self.image = self.right_images[self.right_ind/5]		
-			else: #colliding right
-				self.isCollidingRight = True
+			self.facing_direction = RIGHT
+			if self.right_ind == 15: self.right_ind = 0
+			else: self.right_ind += 1
+			self.image = self.right_images[self.right_ind/5]		
 		
-		#direction != left, direction != right, upward movement required from jump
+		#check jumpCounter and increment y-pos if necessary
 		elif self.jumpCounter > 0:			
 			self.isAirborne = True
 			self.jumpCounter -= 1
@@ -134,13 +134,18 @@ class AICharacterObject(CharacterObject):
 	
 	def update(self, direction, left_side_collision_list, right_side_collision_list, bottom_collision_list):
 		move_speed = BACKGROUND_SPEED
-		if direction == LEFT and self.isCollidingLeft == False:
+		
+		if direction == LEFT: #and self.isCollidingLeft == False:
+			if self.isCollidingLeft == True: 
+				move_speed /= 5
 			if self.x_movement_limit_left == None:				 
 				self.pos = (self.pos[0] - move_speed, self.pos[1])
-			elif self.x_movement_limit_left + X_LIMIT_TEST_POS < self.pos[0] - move_speed: 
+			elif self.x_movement_limit_left - X_LIMIT_TEST_POS < self.pos[0] - move_speed: 
 				self.pos = (self.pos[0] - move_speed, self.pos[1])
 			else: direction = None
-		elif direction == RIGHT and self.isCollidingRight == False:
+		elif direction == RIGHT: #and self.isCollidingRight == False:
+			if self.isCollidingRight == True:
+				move_speed /= 5
 			if self.x_movement_limit_right == None: 
 				self.pos = (self.pos[0] + move_speed, self.pos[1])
 			elif self.x_movement_limit_right + X_LIMIT_TEST_POS > self.pos[0] + move_speed: 
@@ -152,6 +157,16 @@ class AICharacterObject(CharacterObject):
 		elif direction == PLAYER_RIGHT_ONLY: 
 			self.pos = (self.pos[0] - move_speed, self.pos[1])
 			direction = None
+		elif direction == NUDGE_LEFT:
+			if self.x_movement_limit_left - X_LIMIT_TEST_POS < self.pos[0] - NUDGE_AMMOUNT:
+				self.pos = (self.pos[0] - NUDGE_AMMOUNT, self.pos[1])
+			direction = None #possibly pass NUDGE up to super for animation later?
+		elif direction == NUDGE_RIGHT:
+			if self.x_movement_limit_right + X_LIMIT_TEST_POS > self.pos[0] + NUDGE_AMMOUNT:
+				self.pos = (self.pos[0] + NUDGE_AMMOUNT, self.pos[1])
+			direction = None #possibly pass NUDGE up to super for animation later?
+		
+
 		super(AICharacterObject, self).update(direction, left_side_collision_list, right_side_collision_list, bottom_collision_list)	
 	
 class PlayerObject(CharacterObject):
@@ -160,7 +175,9 @@ class PlayerObject(CharacterObject):
 	
 	def update(self, direction, left_side_collision_list, right_side_collision_list, bottom_collision_list):		
 		move_speed = BACKGROUND_SPEED
-		if direction == LEFT:
+		if self.isCollidingLeft or self.isCollidingRight:
+			move_speed /= 5
+		if direction == LEFT:			
 			if self.pos[0] > SCREEN_WIDTH/2 + move_speed:
 				self.pos = (self.pos[0] - move_speed, self.pos[1])				
 			elif self.pos[0] > SCREEN_WIDTH/2:

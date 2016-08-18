@@ -8,10 +8,10 @@ RIGHT = 1
 DOWN = 2
 UP = 3
 CENTER = 4
-#next two are to avoid animation of non-player objects 
-#when they are only moving relative to player object movement
 PLAYER_LEFT_ONLY = 4 
 PLAYER_RIGHT_ONLY = 5
+NUDGE_LEFT = 6
+NUDGE_RIGHT = 7
 ##/directions for movement
 
 ##Menu button commands:
@@ -53,6 +53,7 @@ SPEECH_BUBBLE = 1
 ##speeds
 BACKGROUND_SPEED = 10
 FOREGROUND_SPEED = 8
+NUDGE_AMMOUNT = 15
 ##/speeds
 
 ##collision rect widths - these are for character/player object extended collision rectangles
@@ -62,7 +63,7 @@ RIGHT_RECT_WIDTH = 5
 
 ##universal scenery heights
 #remember that (0, 0) in pygame is the top-left corner; y > 0 is below this point
-FLOOR_HEIGHT = 400
+FLOOR_HEIGHT = 500
 ##
 
 ##image array layout keys	
@@ -138,57 +139,91 @@ AI_CHARACTER_ASSET_FNAMES = [
 'red_death_sprite_right_4.png'
 ]
 
-FOREGROUND_ASSET_FNAMES = ['vending.png'] * 15
-''', 
-'vending.png', 
-'vending.png', 
-'vending.png',
-'vending.png', 
-'vending.png', 
-'vending.png', 
-'vending.png',
-'vending.png', 
-'vending.png', 
-'vending.png', 
-'vending.png',
-'vending.png', 
-'vending.png', 
-'vending.png', 
-'vending.png']
-'''
+FOREGROUND_ASSET_FNAMES = [
+'Foreground_Crowd_Shadows_1.png'
+]
 #positions indicate top-left corner of rectangle
 FOREGROUND_ASSET_POSITIONS = [
-(650, 400),
-(100, 200),
-(500, 300),
-(0, 600),
-(600, 0),
-(400, 400),
-(800, 400),
-(800, 600),
-(300, 500),
-(0, 200),
-(-500, 300),
-(-1000, 600),
-(1600, 0),
-(1400, 400),
-(-800, 400),
-(1800, 600)]
+(0, 0)
+]
+
+DRUM_KIT_POSITION = (311, 200)
+
+BACKGROUND_ASSET_POSITIONS = [
+(0, 0),
+DRUM_KIT_POSITION,
+DRUM_KIT_POSITION,
+(0, 0),
+(0, 0),
+]
 
 BACKGROUND_ASSET_FNAMES = [
-'b1.jpg',
-'b2.jpg',
-'b3.jpg',
-'b4.jpg',
-'b5.jpg']	
+
+'Stage_Background_Far_1.png',
+'DRUMMER/Drummer_Immobile_Area.png',
+'Drum_Kit_Plus_Stands.png',
+'Stage_Background_Near_1.png',
+'Background_Crowd_Outlines.png'
+]	
+
+##Drummer is actually 5 animated images: left arm, right arm, foot, high-hat, left-cymbal, right-cymbal
+DRUMMER_ASSET_FNAMES = [
+	['DRUMMER_LEFT_Arm_Floor_Tom_Hit.png'],
+	
+	['DRUMMER_LEFT_Arm_Neutral_1.png',
+	'DRUMMER_LEFT_Arm_Neutral_2.png'],
+	
+	['DRUMMER_LEFT_Hand_Up_1.png',
+	'DRUMMER_LEFT_Hand_Up_2.png',
+	'DRUMMER_LEFT_Hand_Up_3.png',
+	'DRUMMER_LEFT_Hand_Up_4.png',
+	'DRUMMER_LEFT_Hand_Up_5.png'],
+
+	['DRUMMER_RIGHT_Arm_Neutral_1.png',
+	'DRUMMER_RIGHT_Arm_Neutral_2.png'],
+
+	['DRUMMER_RIGHT_Hand_Up_1.png',
+	'DRUMMER_RIGHT_Hand_Up_2.png',
+	'DRUMMER_RIGHT_Hand_Up_3.png',
+	'DRUMMER_RIGHT_Hand_Up_4.png',
+	'DRUMMER_RIGHT_Hand_Up_5.png'],
+
+	['DRUMMER_High_Hat_UP.png',
+	'DRUMMER_High_Hat_DOWN.png'],
+
+	['DRUMMER_High_Hat_FOOT_UP.png',
+	'DRUMMER_High_Hat_FOOT_DOWN.png'],
+
+	['DRUMMER_Cymbal_LEFT_STILL.png',
+	'DRUMMER_Cymbal_LEFT_HIT_1.png',
+	'DRUMMER_Cymbal_LEFT_HIT_2.png',
+	'DRUMMER_Cymbal_LEFT_HIT_1.png',
+	'DRUMMER_Cymbal_LEFT_STILL.png',
+	'DRUMMER_Cymbal_LEFT_HIT_REVERSE_1.png',
+	'DRUMMER_Cymbal_LEFT_HIT_REVERSE_2.png',
+	'DRUMMER_Cymbal_LEFT_HIT_REVERSE_1.png',
+	'DRUMMER_Cymbal_LEFT_STILL.png'],
+
+	['DRUMMER_Cymbal_RIGHT_STILL.png',
+	'DRUMMER_Cymbal_RIGHT_HIT_1.png',
+	'DRUMMER_Cymbal_RIGHT_HIT_2.png',
+	'DRUMMER_Cymbal_RIGHT_HIT_1.png',
+	'DRUMMER_Cymbal_RIGHT_STILL.png',
+	'DRUMMER_Cymbal_RIGHT_HIT_REVERSE_1.png',
+	'DRUMMER_Cymbal_RIGHT_HIT_REVERSE_2.png',
+	'DRUMMER_Cymbal_RIGHT_HIT_REVERSE_1.png',
+	'DRUMMER_Cymbal_RIGHT_STILL.png']
+]
 ##
+
+
 
 ## Screen side limits
 #note that this limit is when the background screen will stop scrolling
 #the player character will still be at the screen mid-point, and AI
 #characters move independent of background coords
-X_SCROLL_LIMIT_LEFT = -SCREEN_WIDTH/2
-X_SCROLL_LIMIT_RIGHT = SCREEN_WIDTH + SCREEN_WIDTH/2
+X_SCROLL_LIMIT_LEFT = SCREEN_WIDTH/2
+X_SCROLL_LIMIT_RIGHT = SCREEN_WIDTH/2
 X_SCROLL_LIMITS = (X_SCROLL_LIMIT_LEFT, X_SCROLL_LIMIT_RIGHT)
 X_PLAYER_MOVE_LIMIT = (0, SCREEN_WIDTH)
 AT_LIMIT_LEFT = 1 #left-side of background limit has been reached

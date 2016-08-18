@@ -20,7 +20,12 @@ class VerticalButtonsMenu(object):
 					button_stack_alignment,			#the stack is vertical, alignment is one of LEFT, RIGHT or CENTER
 					is_button_size_equalized,		#if True, all buttons are set to the same size as the largest button (determined by size of the font image)
 					selected_color_font_and_border, #font/border color for the button when the mouse is hovering over it
-					selected_color_background):		
+					selected_color_background,
+					title_text=None,
+					title_text_size=100,
+					title_text_font="impact",
+					title_text_color=BLACK,
+					is_title_text_above_buttons=True):		
 		
 		self.surface = surface
 		self.button_text_array = text_for_buttons
@@ -36,6 +41,7 @@ class VerticalButtonsMenu(object):
 		self.is_button_size_equalized = is_button_size_equalized
 		self.selected_color_font_and_border = selected_color_font_and_border
 		self.selected_color_background = selected_color_background
+		self.title_text_image = None
 
 		#set up background image
 		
@@ -46,7 +52,7 @@ class VerticalButtonsMenu(object):
 		else:
 			self.background = background_image
 
-
+		#instantiate font surfaces for the creation of buttons
 		largest_height = 0
 		largest_width = 0
 		self.font_images = []
@@ -64,16 +70,33 @@ class VerticalButtonsMenu(object):
 				if curr_width > largest_width: largest_width = curr_width
 				if curr_height > largest_height: largest_height = curr_height
 		
+		#instantiate buttons using font surfaces
 		self.total_height = 0
 		self.button_images = []
 		self.selected_button_images = []
 		size = (largest_width, largest_height)
 		for index, font_image in enumerate(self.font_images):
 			if not is_button_size_equalized: size = font_image.get_size()
-			#make button surfaces
-			new_button_image = makeSpeechBubble(size[0], size[1], button_corner_radius, False, True, button_background_color, button_border_and_font_color, button_border_size, button_alpha_colorkey_color)
-			new_selected_button_image = makeSpeechBubble(size[0], size[1], button_corner_radius, False, True, selected_color_background, selected_color_font_and_border, button_border_size, button_alpha_colorkey_color)
-			#draw font surface onto button surface
+			#make button surfaces, both unselected and selected colored
+			new_button_image 			= makeSpeechBubble(	size[0], 
+															size[1], 
+															button_corner_radius, 
+															False, 
+															True, 
+															button_background_color, 
+															button_border_and_font_color, 
+															button_border_size, 
+															button_alpha_colorkey_color)
+			new_selected_button_image 	= makeSpeechBubble(	size[0], 
+															size[1], 
+															button_corner_radius, 
+															False, 
+															True, 
+															selected_color_background, 
+															selected_color_font_and_border, 
+															button_border_size, 
+															button_alpha_colorkey_color)
+			#draw font surfaces onto button surfaces
 			blit_position = (font_image.get_rect().left + button_corner_radius, font_image.get_rect().top + button_corner_radius)			
 			if is_button_size_equalized:
 				blit_x_pos = font_image.get_rect().left + button_corner_radius + (largest_width/2 - font_image.get_width()/2)
@@ -134,6 +157,7 @@ class VerticalButtonsMenu(object):
 				y_offset += (5 + button[1].height)
 				self.surface.blit(button[0], button[1].topleft)
 
+			#draw
 			pygame.display.flip()
 
 	def mouseButtonUpHandler(self, cur_pos, stored_pos):

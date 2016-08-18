@@ -21,23 +21,32 @@ class textObject(pygame.sprite.Sprite):
 		self.text_obj_type = text_obj_type
 		self.screen = screen
 		self.font = pygame.font.SysFont(font, font_size)
+
+		self.argument_vector = argument_vector
 			
 		#This is the fading-points properties specification
+		'''!!! POINTS_FADING argument vector layout: [isFading, isMoving, isTemporary]'''
 		if self.text_obj_type == POINTS_FADING:
 			self.font_image = self.font.render(text, False, back_color).convert()				
 			self.rect = self.font_image.get_rect()
 			size = (self.rect.right + 6, self.rect.bottom + 6)
 			self.image = pygame.Surface(size, pygame.SRCALPHA).convert()		
 			self.image.fill(colorkey_color) #for transparency, white will be the colorkey here
-			self.image.blit(self.font_image, self.rect.topleft)
-			self.image.blit(self.font_image, (self.rect.left+6, self.rect.top))
-			self.image.blit(self.font_image, (self.rect.left, self.rect.top+6))
-			self.image.blit(self.font_image, (self.rect.left+6, self.rect.top+6))
+			
+			self.image.blit(self.font_image, self.rect.topleft) 					#left-top corner
+			self.image.blit(self.font_image, (self.rect.left+6, self.rect.top)) 	#right-top corner
+			self.image.blit(self.font_image, (self.rect.left+3, self.rect.top)) 	#top middle
+			self.image.blit(self.font_image, (self.rect.left, self.rect.top+6))		#left-bottom corner
+			self.image.blit(self.font_image, (self.rect.left+6, self.rect.top+6))	#right-bottom corner
+			self.image.blit(self.font_image, (self.rect.left+3, self.rect.top+6))	#bottom middle
+			self.image.blit(self.font_image, (self.rect.left, self.rect.top+3))		#left middle
+			self.image.blit(self.font_image, (self.rect.left+6, self.rect.top+3))		#right middle
+
 			self.font_image = self.font.render(text, False, font_color).convert()
 			self.image.blit(self.font_image, (self.rect.left+3, self.rect.top+3))
 			self.image.set_colorkey(colorkey_color)
 
-		#This is the speech bubble properties specification
+		#This is the speech bubble properties specification		
 		'''!!! Speech Bubble argument vector layout [isLeftOriented, isButton, borderSize] !!!'''
 		if self.text_obj_type == SPEECH_BUBBLE:
 			self.text_array = text.split()
@@ -70,17 +79,14 @@ class textObject(pygame.sprite.Sprite):
 				
 			radius = height/(len(self.line_surfaces)+1)
 
-			self.image = makeSpeechBubble(width, height, radius, argument_vector[0], argument_vector[1], back_color, font_color, argument_vector[2], colorkey_color)
+			self.image = makeSpeechBubble(width, height, radius, self.argument_vector[0], self.argument_vector[1], back_color, font_color, self.argument_vector[2], colorkey_color)
 			self.rect = self.image.get_rect()
 			prev_surface_height = 0
 			for index, text_surface_atribs in enumerate(self.line_surfaces):
 				self.image.blit(text_surface_atribs[0], (self.rect.left + radius, self.rect.top + radius + prev_surface_height))
 				prev_surface_height += text_surface_atribs[1][1]
 			self.image.set_colorkey(colorkey_color)
-			
-
-
-
+		
 		self.rect = self.rect.move(position)		
 		self.rect.center = position		
 		self.font_color = font_color
@@ -94,9 +100,9 @@ class textObject(pygame.sprite.Sprite):
 		
 		#This is the fading-points behavior specification
 		if self.text_obj_type == POINTS_FADING:			
-			self.image.set_alpha(self.image.get_alpha()-10)
-			self.rect.top = self.rect.top - 5
-			self.duration -= 1
+			if self.argument_vector[0] == True: self.image.set_alpha(self.image.get_alpha()-10)
+			if self.argument_vector[1] == True: self.rect.top = self.rect.top - 5
+			if self.argument_vector[2] == True: self.duration -= 1
 
 		if self.text_obj_type == SPEECH_BUBBLE:
 			self.duration -= 1
