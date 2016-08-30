@@ -10,9 +10,9 @@ class ScenerySprite(pygame.sprite.Sprite):
 		self.image = image
 		self.rect = self.image.get_rect(topleft=self.starting_position)
 
-	def update(self, direction, speed):
-		if direction == LEFT: self.rect = self.rect.move(speed, 0)
-		elif direction == RIGHT: self.rect = self.rect.move(-speed, 0)
+	def update(self, direction, speed, direction_obj):
+		if direction == direction_obj.left: self.rect = self.rect.move(speed, 0)
+		elif direction == direction_obj.right: self.rect = self.rect.move(-speed, 0)
 
 	def setImage_and_Rect(self, image):
 		self.image = image
@@ -22,15 +22,15 @@ class ForegroundSprite(ScenerySprite):
 	def __init__(self, screen, image, starting_position):
 		ScenerySprite.__init__(self, screen, image, starting_position)
 
-	def update(self, direction, speed):
-		super(ForegroundSprite, self).update(direction, speed)
+	def update(self, direction, speed, direction_obj):
+		super(ForegroundSprite, self).update(direction, speed, direction_obj)
 
 class BackgroundSprite(ScenerySprite):
 	def __init__(self, screen, image, starting_position):
 		ScenerySprite.__init__(self, screen, image, starting_position)
 
-	def update(self, direction, speed):
-		super(BackgroundSprite, self).update(direction, speed)
+	def update(self, direction, speed, direction_obj):
+		super(BackgroundSprite, self).update(direction, speed, direction_obj)
 
 class AnimatedScenerySprite(ScenerySprite):
 	def __init__(self, screen, multi_animation_list, starting_position, starting_animation_index_tuple, inter_frame_delay_max, animation_start_delay):
@@ -43,7 +43,7 @@ class AnimatedScenerySprite(ScenerySprite):
 		self.start_pos_tuple = starting_animation_index_tuple
 		self.animation_count = 0 #len(self.multi_animation_list[self.start_pos_tuple[0]]) - self.start_pos_tuple[1]
 		self.current_sequence_and_frame = [self.start_pos_tuple[0], self.start_pos_tuple[1]]
-		self.isExecuting = False
+		self.isExecuting = True
 		self.frame_delay_set = inter_frame_delay_max
 		self.frame_delay_counter = inter_frame_delay_max
 		self.animation_delay_start_set = animation_start_delay
@@ -53,9 +53,9 @@ class AnimatedScenerySprite(ScenerySprite):
 		"""returns a (int, list) tuple: the number of animation sequences, and each sequence length in a list"""
 		return len(self.multi_animation_list), [len(interior_list) for interior_list in self.multi_animation_list]
 	
-	def update(self, direction, speed, animation_sequence_index, override_animation=False):
+	def update(self, direction, speed, animation_sequence_index, override_animation, direction_obj):
 		"""Explicitly alter the position/image of this sprite, animation sequence index refers to the particular sequence to use"""
-		super(AnimatedScenerySprite, self).update(direction, speed) #purely directional, not animation related			
+		super(AnimatedScenerySprite, self).update(direction, speed, direction_obj) #purely directional, not animation related			
 
 		if override_animation and animation_sequence_index != None:
 			self.isExecuting = True
@@ -103,7 +103,7 @@ class AnimatedSceneryAnimationManager(object):
 		for tri_tuple in self.list_active_reactive_animation_tuples:
 			self.reactive_animation_dictionary[(tri_tuple[0], tri_tuple[1])] = tri_tuple[2]
 
-	def update(self):		
+	def update(self, speed, directions_obj):		
 		for index, sprite in enumerate(self.sprites):
 			chosen_sequence = None
 
@@ -123,9 +123,9 @@ class AnimatedSceneryAnimationManager(object):
 					if (index, chosen_sequence) in self.reactive_animation_dictionary: #check if updated sprite has a reactive pairing
 						reactive_sequence = self.reactive_animation_dictionary[(index, chosen_sequence)]
 						#if not self.sprites[reactive_sequence].isExecuting: #check if reactive animation is already firing
-						self.sprites[reactive_sequence].update(None, BACKGROUND_SPEED, 0, True)
+						self.sprites[reactive_sequence].update(None, speed, 0, True, directions_obj)
 
-			sprite.update(None, BACKGROUND_SPEED, chosen_sequence)
+			sprite.update(None, speed, chosen_sequence, False, directions_obj)
 
 	def draw(self, surface):
 		self.spritegroup.draw(surface)
@@ -150,7 +150,7 @@ class AnimatedSceneryAnimationManager(object):
 								
 
 class BackgroundSurfacesManager(object):
-	def __init__(self, screen, image_list, starting_positions, wrap=True, scroll_limits=None ):
+	def __init__(self, screen, image_list, starting_positions, wrap, scroll_limits, screen_width ):
 		"""
 		Managing object for the sprite.Group for all background surfaces.		
 		"""
@@ -162,25 +162,28 @@ class BackgroundSurfacesManager(object):
 		self.wrap = wrap 							#if true: background is circular in nature - will wrap back around
 		self.limit_test_position = None
 		self.x_movement_measure = 0 				
-		if self.limits != None: self.limit_test_position = SCREEN_WIDTH/2		
+		if self.limits != None: self.limit_test_position = screen_width/2		
 		self.background_sprite_group = pygame.sprite.OrderedUpdates()
 		for index, image in enumerate(self.images): 
 			self.background_sprite_group.add(BackgroundSprite(self.screen, image, self.positions[index]))
 			
-	def update(self, direction, speed, player_object):
+	def update(self, direction, speed, player_object, direction_obj, dimensions_and_limits_obj):
 		"""updates all background sprites uniformly, unless doing so would violate a limit in self.limits""" 
+		LEFT = direction_obj.left
+		RIGHT = direction_obj.right
+
 		if direction == LEFT:			
 			if (self.limits != None): 
-				if (self.limits[1] <= (self.limit_test_position + speed)): return AT_LIMIT_RIGHT, self.x_movement_measure								
+				if (self.limits[1] <= (self.limit_test_position + speed)): return dimensions_and_limits_obj.AT_LIMIT_RIGHT, self.x_movement_measure	+ dimensions_and_limits_obj.x_limit_test_pos							
 
-			if player_object.pos[0] == SCREEN_WIDTH/2:	
+			if player_object.pos[0] == dimensions_and_limits_obj.screen_width/2:	
 				self.background_sprite_group.update(direction, speed)			
 				self.x_movement_measure += speed						
 				if self.limit_test_position != None: self.limit_test_position += speed			
 
 				if self.wrap: #if wrapping is enabled
-					if self.x_movement_measure > SCREEN_WIDTH:
-						self.x_movement_measure -= SCREEN_WIDTH
+					if self.x_movement_measure > dimensions_and_limits_obj.screen_width:
+						self.x_movement_measure -= dimensions_and_limits_obj.screen_width
 						#get sprite with largest x-pos
 						sprite_x_pos = None
 						target_sprite = None
@@ -192,21 +195,21 @@ class BackgroundSurfacesManager(object):
 								sprite_x_pos = sprite.rect.x
 								target_sprite = sprite
 						#farthest right sprite found, cycle
-						target_sprite.update(RIGHT, SCREEN_WIDTH*(len(self.images)))			
+						target_sprite.update(RIGHT, dimensions_and_limits_obj.screen_width*(len(self.images)))			
 			
 		elif direction == RIGHT: 
 			if (self.limits != None): 
-				if (self.limits[0] >= (self.limit_test_position - speed)): return AT_LIMIT_LEFT, self.x_movement_measure
+				if (self.limits[0] >= (self.limit_test_position - speed)): return dimensions_and_limits_obj.AT_LIMIT_LEFT, self.x_movement_measure + dimensions_and_limits_obj.x_limit_test_pos
 
-			if player_object.pos[0] == SCREEN_WIDTH/2:
+			if player_object.pos[0] == dimensions_and_limits_obj.screen_width/2:
 				self.background_sprite_group.update(direction, speed)			
 				self.x_movement_measure -= speed			
 				
 				if self.limit_test_position != None: self.limit_test_position -= speed
 				
 				if self.wrap: #if wrapping is enabled			
-					if self.x_movement_measure < -SCREEN_WIDTH:
-						self.x_movement_measure += SCREEN_WIDTH
+					if self.x_movement_measure < -dimensions_and_limits_obj.screen-width:
+						self.x_movement_measure += dimensions_and_limits_obj.screen_width
 						#get sprite with largest x-pos
 						sprite_x_pos = None
 						target_sprite = None
@@ -218,9 +221,9 @@ class BackgroundSurfacesManager(object):
 								sprite_x_pos = sprite.rect.x
 								target_sprite = sprite
 						#farthest left sprite found, cycle
-						target_sprite.update(LEFT, SCREEN_WIDTH*(len(self.images)))
+						target_sprite.update(LEFT, dimensions_and_limits_obj.screen_width*(len(self.images)))
 		
-		return None, self.x_movement_measure
+		return None, self.x_movement_measure + dimensions_and_limits_obj.x_limit_test_pos
 	
 	def draw(self, screen):
 		self.background_sprite_group.draw(screen)
