@@ -1,69 +1,171 @@
 import pygame, os
+from sys import platform
 
-"""GLOBALS"""
+CLOCK = pygame.time.Clock()
 
-##directions for movement, also used for alignment
-LEFT = 0
-RIGHT = 1
-DOWN = 2
-UP = 3
-CENTER = 4
-PLAYER_LEFT_ONLY = 4 
-PLAYER_RIGHT_ONLY = 5
-NUDGE_LEFT = 6
-NUDGE_RIGHT = 7
-##/directions for movement
+class Directions(object):
+	def __init__(self, left, right, down, up, direction_key_states, center, player_left_only, player_right_only, nudge_left, nudge_right):
+		self.left = left
+		self.right = right
+		self.down = down
+		self.up = up
+		self.direction_key_states = direction_key_states
+		self.center = center
+		self.player_left_only = player_left_only
+		self.player_right_only = player_right_only
+		self.nudge_left = nudge_left
+		self.nudge_right = nudge_right
 
-##Menu button commands:
-BACK_TO_GAME = 0
-QUIT = 1
-CONTROLS = 2
-OPTIONS = 3
-##
+class MenuButtonCommands(object):
+	def __init__(self, back, quit, controls, options, restart):
+		self.BACK_TO_GAME = back
+		self.QUIT = quit
+		self.CONTROLS = controls
+		self.OPTIONS = options
+		self.RESTART = restart
 
-##colors
-GREY = (128, 128, 128)
-DARK_GREY = (50, 50, 50)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
-LIGHT_BLUE = (125, 125, 255)
-BLACK = (0, 0, 0)
-GOLD = (255, 215, 0)
-WHITE = (255, 255, 255)
-YELLOW = (255, 255, 0)
-##/colors
+class ColorDefs(object):	
+		GREY 			=	(128, 128, 128)
+		DARK_GREY		=	(50, 50, 50)
+		RED				=	(255, 0, 0)
+		GREEN 			=	(0, 255, 0)
+		BLUE 			=	(0, 0, 255)
+		LIGHT_BLUE 		=	(125, 125, 255)
+		BLACK 			=	(0, 0, 0)
+		GOLD 			=	(255, 215, 0)
+		WHITE 			=	(255, 255, 255)
+		YELLOW 			=	(255, 255, 0)
+		TEST_COL		= 	(230, 240, 250)
 
-##
-#NOTE: THESE FONTS DO NOT WORK:
+class DimensionsAndLimits(object):
+	AT_LIMIT_LEFT = 1
+	AT_LIMIT_RIGHT = 2
+	def __init__(	self, 
+					screen_width, 
+					screen_height, 
+					char_collision_rect_left_width, 
+					char_collision_rect_right_width ):
+
+		self.screen_height = screen_height
+		self.screen_width = screen_width
+		self.left_rect_width = char_collision_rect_left_width
+		self.right_rect_width = char_collision_rect_right_width
+		self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
+		self.screen_rect = self.screen.get_rect()
+		self.x_scroll_limit_left = self.screen_width/2
+		self.x_scroll_limit_right = self.screen_width/2
+		self.x_scroll_limits = (self.x_scroll_limit_left, self.x_scroll_limit_right)
+		self.x_limit_test_pos = self.screen_width/2
+
+class MovementMeasures(object):
+	def __init__(self, background_speed, foreground_speed, nudge_amount):
+		self.background_speed = background_speed
+		self.foreground_speed = foreground_speed
+		self.nudge_amount = nudge_amount
+
+class DrawPositions(object):
+	def __init__(self, character_y_pos, drum_kit_position, foreground_asset_positions, background_asset_positions_near, background_asset_positions_far):
+		self.character_y_pos = character_y_pos
+		self.drum_kit_position = drum_kit_position
+		self.foreground_asset_positions = foreground_asset_positions
+		self.background_asset_positions_near = background_asset_positions_near
+		self.background_asset_positions_far = background_asset_positions_far
+
+class TextObjectTypes(object):
+	POINTS_FADING = 0
+	SPEECH_BUBBLE = 1
+
+class ArtAssets(object):
+	slash = '/'
+
+	def __init__(self, path):
+		if platform == "Win32": 
+			self.slash = "\\"
+		self.path = path + self.slash
+		self.drummer_path = "DRUMMER" + self.slash
+		self.player_asset_fnames = [
+									'death_sprite_left_1.png',
+									'death_sprite_left_2.png',
+									'death_sprite_left_3.png',
+									'death_sprite_left_4.png',
+									'death_sprite_right_1.png',
+									'death_sprite_right_2.png',
+									'death_sprite_right_3.png',
+									'death_sprite_right_4.png']
+		self.ai_character_asset_fnames = [
+									'red_death_sprite_left_1.png',
+									'red_death_sprite_left_2.png',
+									'red_death_sprite_left_3.png',
+									'red_death_sprite_left_4.png',
+									'red_death_sprite_right_1.png',
+									'red_death_sprite_right_2.png',
+									'red_death_sprite_right_3.png',
+									'red_death_sprite_right_4.png']			
+		self.foreground_asset_fnames = [
+									'Foreground_Crowd_Shadows_1.png']
+		self.background_asset_fnames_near = [
+									'Drum_Kit_Plus_Stands.png',
+									'Stage_Background_Near_1.png',
+									'Background_Crowd_Outlines.png']
+		self.background_asset_fnames_far = [
+									'Stage_Background_Far_1.png',
+									'DRUMMER/Drummer_Immobile_Area.png']	
+		self.drummer_asset_fnames = [
+									['DRUMMER_LEFT_Arm_Floor_Tom_Hit.png'],
+									
+									['DRUMMER_LEFT_Arm_Neutral_1.png',
+									'DRUMMER_LEFT_Arm_Neutral_2.png'],
+									
+									['DRUMMER_LEFT_Hand_Up_1.png',
+									'DRUMMER_LEFT_Hand_Up_2.png',
+									'DRUMMER_LEFT_Hand_Up_3.png',
+									'DRUMMER_LEFT_Hand_Up_4.png',
+									'DRUMMER_LEFT_Hand_Up_5.png'],
+
+									['DRUMMER_RIGHT_Arm_Neutral_1.png',
+									'DRUMMER_RIGHT_Arm_Neutral_2.png'],
+
+									['DRUMMER_RIGHT_Hand_Up_1.png',
+									'DRUMMER_RIGHT_Hand_Up_2.png',
+									'DRUMMER_RIGHT_Hand_Up_3.png',
+									'DRUMMER_RIGHT_Hand_Up_4.png',
+									'DRUMMER_RIGHT_Hand_Up_5.png'],
+
+									['DRUMMER_High_Hat_UP.png',
+									'DRUMMER_High_Hat_DOWN.png'],
+
+									['DRUMMER_High_Hat_FOOT_UP.png',
+									'DRUMMER_High_Hat_FOOT_DOWN.png'],
+
+									['DRUMMER_Cymbal_LEFT_STILL.png',
+									'DRUMMER_Cymbal_LEFT_HIT_1.png',
+									'DRUMMER_Cymbal_LEFT_HIT_2.png',
+									'DRUMMER_Cymbal_LEFT_HIT_1.png',
+									'DRUMMER_Cymbal_LEFT_STILL.png',
+									'DRUMMER_Cymbal_LEFT_HIT_REVERSE_1.png',
+									'DRUMMER_Cymbal_LEFT_HIT_REVERSE_2.png',
+									'DRUMMER_Cymbal_LEFT_HIT_REVERSE_1.png',
+									'DRUMMER_Cymbal_LEFT_STILL.png'],
+
+									['DRUMMER_Cymbal_RIGHT_STILL.png',
+									'DRUMMER_Cymbal_RIGHT_HIT_1.png',
+									'DRUMMER_Cymbal_RIGHT_HIT_2.png',
+									'DRUMMER_Cymbal_RIGHT_HIT_1.png',
+									'DRUMMER_Cymbal_RIGHT_STILL.png',
+									'DRUMMER_Cymbal_RIGHT_HIT_REVERSE_1.png',
+									'DRUMMER_Cymbal_RIGHT_HIT_REVERSE_2.png',
+									'DRUMMER_Cymbal_RIGHT_HIT_REVERSE_1.png',
+									'DRUMMER_Cymbal_RIGHT_STILL.png']
+									]
+
+#NOTE: THESE PYGAME SYSFONTS DO NOT WORK:
 #anything ending in 'bold' (FONT_LIST[CURR_FONT][-4:] == "bold")	
 #anything ending in 'italic' (FONT_LIST[CURR_FONT][-6:] == "italic")
 #cambria
 #yugothic
-FONT_LIST = pygame.font.get_fonts()
-CURR_FONT = 0
-FONT_LIMIT = len(FONT_LIST)
-##
-
-##TextObj types
-POINTS_FADING = 0
-SPEECH_BUBBLE = 1
-##
-
-##speeds
-BACKGROUND_SPEED = 10
-FOREGROUND_SPEED = 8
-NUDGE_AMMOUNT = 15
-##/speeds
-
-##collision rect widths - these are for character/player object extended collision rectangles
-LEFT_RECT_WIDTH = 5
-RIGHT_RECT_WIDTH = 5
-##
-
-##universal scenery heights
-#remember that (0, 0) in pygame is the top-left corner; y > 0 is below this point
-FLOOR_HEIGHT = 500
+#FONT_LIST = pygame.font.get_fonts()
+#CURR_FONT = 0
+#FONT_LIMIT = len(FONT_LIST)
 ##
 
 ##image array layout keys	
@@ -96,137 +198,4 @@ DOWN_3 	= 19
 
 ##AI states
 DEFAULT_AI_TYPE = 0 #debugging ai type
-##
-
-##Screen attributes and clock
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
-SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-SCREEN_RECT = SCREEN.get_rect()
-CLOCK = pygame.time.Clock()
-##
-
-##Bools for determining whether a key is held down
-LEFT_KEY_DOWN = False
-RIGHT_KEY_DOWN = False
-##
-
-##art assets and asset arrays
-#These should probably all be moved to a separate text file and processed programmatically 
-#to avoid unncessary bulk in the code as asset amounts rise
-
-ASSETS_PATH = r'art_assets/'
-
-PLAYER_ASSET_FNAMES = [
-'death_sprite_left_1.png',
-'death_sprite_left_2.png',
-'death_sprite_left_3.png',
-'death_sprite_left_4.png',
-'death_sprite_right_1.png',
-'death_sprite_right_2.png',
-'death_sprite_right_3.png',
-'death_sprite_right_4.png'
-]
-
-AI_CHARACTER_ASSET_FNAMES = [
-'red_death_sprite_left_1.png',
-'red_death_sprite_left_2.png',
-'red_death_sprite_left_3.png',
-'red_death_sprite_left_4.png',
-'red_death_sprite_right_1.png',
-'red_death_sprite_right_2.png',
-'red_death_sprite_right_3.png',
-'red_death_sprite_right_4.png'
-]
-
-FOREGROUND_ASSET_FNAMES = [
-'Foreground_Crowd_Shadows_1.png'
-]
-#positions indicate top-left corner of rectangle
-FOREGROUND_ASSET_POSITIONS = [
-(0, 0)
-]
-
-DRUM_KIT_POSITION = (311, 200)
-
-BACKGROUND_ASSET_POSITIONS = [
-(0, 0),
-DRUM_KIT_POSITION,
-DRUM_KIT_POSITION,
-(0, 0),
-(0, 0),
-]
-
-BACKGROUND_ASSET_FNAMES = [
-
-'Stage_Background_Far_1.png',
-'DRUMMER/Drummer_Immobile_Area.png',
-'Drum_Kit_Plus_Stands.png',
-'Stage_Background_Near_1.png',
-'Background_Crowd_Outlines.png'
-]	
-
-##Drummer is actually 5 animated images: left arm, right arm, foot, high-hat, left-cymbal, right-cymbal
-DRUMMER_ASSET_FNAMES = [
-	['DRUMMER_LEFT_Arm_Floor_Tom_Hit.png'],
-	
-	['DRUMMER_LEFT_Arm_Neutral_1.png',
-	'DRUMMER_LEFT_Arm_Neutral_2.png'],
-	
-	['DRUMMER_LEFT_Hand_Up_1.png',
-	'DRUMMER_LEFT_Hand_Up_2.png',
-	'DRUMMER_LEFT_Hand_Up_3.png',
-	'DRUMMER_LEFT_Hand_Up_4.png',
-	'DRUMMER_LEFT_Hand_Up_5.png'],
-
-	['DRUMMER_RIGHT_Arm_Neutral_1.png',
-	'DRUMMER_RIGHT_Arm_Neutral_2.png'],
-
-	['DRUMMER_RIGHT_Hand_Up_1.png',
-	'DRUMMER_RIGHT_Hand_Up_2.png',
-	'DRUMMER_RIGHT_Hand_Up_3.png',
-	'DRUMMER_RIGHT_Hand_Up_4.png',
-	'DRUMMER_RIGHT_Hand_Up_5.png'],
-
-	['DRUMMER_High_Hat_UP.png',
-	'DRUMMER_High_Hat_DOWN.png'],
-
-	['DRUMMER_High_Hat_FOOT_UP.png',
-	'DRUMMER_High_Hat_FOOT_DOWN.png'],
-
-	['DRUMMER_Cymbal_LEFT_STILL.png',
-	'DRUMMER_Cymbal_LEFT_HIT_1.png',
-	'DRUMMER_Cymbal_LEFT_HIT_2.png',
-	'DRUMMER_Cymbal_LEFT_HIT_1.png',
-	'DRUMMER_Cymbal_LEFT_STILL.png',
-	'DRUMMER_Cymbal_LEFT_HIT_REVERSE_1.png',
-	'DRUMMER_Cymbal_LEFT_HIT_REVERSE_2.png',
-	'DRUMMER_Cymbal_LEFT_HIT_REVERSE_1.png',
-	'DRUMMER_Cymbal_LEFT_STILL.png'],
-
-	['DRUMMER_Cymbal_RIGHT_STILL.png',
-	'DRUMMER_Cymbal_RIGHT_HIT_1.png',
-	'DRUMMER_Cymbal_RIGHT_HIT_2.png',
-	'DRUMMER_Cymbal_RIGHT_HIT_1.png',
-	'DRUMMER_Cymbal_RIGHT_STILL.png',
-	'DRUMMER_Cymbal_RIGHT_HIT_REVERSE_1.png',
-	'DRUMMER_Cymbal_RIGHT_HIT_REVERSE_2.png',
-	'DRUMMER_Cymbal_RIGHT_HIT_REVERSE_1.png',
-	'DRUMMER_Cymbal_RIGHT_STILL.png']
-]
-##
-
-
-
-## Screen side limits
-#note that this limit is when the background screen will stop scrolling
-#the player character will still be at the screen mid-point, and AI
-#characters move independent of background coords
-X_SCROLL_LIMIT_LEFT = SCREEN_WIDTH/2
-X_SCROLL_LIMIT_RIGHT = SCREEN_WIDTH/2
-X_SCROLL_LIMITS = (X_SCROLL_LIMIT_LEFT, X_SCROLL_LIMIT_RIGHT)
-X_PLAYER_MOVE_LIMIT = (0, SCREEN_WIDTH)
-AT_LIMIT_LEFT = 1 #left-side of background limit has been reached
-AT_LIMIT_RIGHT = 2 #right-side of background limit has been reached
-X_LIMIT_TEST_POS = SCREEN_WIDTH/2
 ##
