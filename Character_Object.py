@@ -4,7 +4,7 @@ from random import randint
 from Globals import *
 
 class CharacterObject(pygame.sprite.Sprite):
-	def __init__(self, screen, images, starting_position, x_limits=None):
+	def __init__(self, screen, images, starting_position, x_limits, dimsAndLims_obj):
 		"""Super class for player and non-player characters in the game
 		CharacterObject class is mainly to handle animation and collision 
 		detectionrather than repositioning of pc/npc objects - except for 
@@ -21,7 +21,8 @@ class CharacterObject(pygame.sprite.Sprite):
 		self.images = images
 		self.image = images[0]		
 		self.pos = starting_position
-		self.facing_direction = RIGHT		
+		self.character_floor = starting_position[1] #used to stop fall motion, essentially locates the 'floor'
+		self.facing_direction = 1 #1 is right		
 		
 		self.rect = self.image.get_rect()		
 		self.rect.center = self.pos		
@@ -31,15 +32,15 @@ class CharacterObject(pygame.sprite.Sprite):
 		self.right_images 	= self.images[LEFT_3 	+ 1	:RIGHT_3 	+ 1	]
 		#currently only using left/right animations
 		'''
-		self.idle_images 	= self.images[RIGHT_3	+ 1 :IDLE_3 	+ 1	]				
-		self.up_images 		= self.images[IDLE_3 	+ 1	:UP_3 		+ 1	]
-		self.down_images 	= self.images[UP_3 		+ 1	:DOWN_3 	+ 1	]
+		self.idle_images 	= self.images[right_3	+ 1 :IDLE_3 	+ 1	]				
+		self.up_images 		= self.images[IDLE_3 	+ 1	:up_3 		+ 1	]
+		self.down_images 	= self.images[up_3 		+ 1	:DOWN_3 	+ 1	]
 		'''
 		
 		#collision rectangles and stats
-		self.bottom_collision_rect = pygame.Rect( self.rect.bottomleft, ( self.rect.width, FLOOR_HEIGHT - self.rect.bottom ) )		
-		self.right_side_collision_rect = pygame.Rect( self.rect.topright, (RIGHT_RECT_WIDTH, self.rect.height-2) )
-		self.left_side_collision_rect = pygame.Rect( (self.rect.left - LEFT_RECT_WIDTH, self.rect.top), self.rect.bottomleft )
+		self.bottom_collision_rect = pygame.Rect( self.rect.bottomleft, ( self.rect.width, self.character_floor - self.rect.bottom ) )		
+		self.right_side_collision_rect = pygame.Rect( self.rect.topright, (dimsAndLims_obj.right_rect_width, self.rect.height-2) )
+		self.left_side_collision_rect = pygame.Rect( (self.rect.left - dimsAndLims_obj.left_rect_width, self.rect.top), self.rect.bottomleft )
 		
 		self.isCollidingRight = False
 		self.isCollidingLeft = False
@@ -61,8 +62,16 @@ class CharacterObject(pygame.sprite.Sprite):
 		self.fall_speed 	= 0
 		self.jump_speed 	= 15
 		
-	def update(self, direction, left_side_collision_list, right_side_collision_list, bottom_collision_list):
-		
+	def update(self, direction, left_side_collision_list, right_side_collision_list, bottom_collision_list, direction_obj, dimsAndLims_obj):
+
+		left = direction_obj.left
+		right = direction_obj.right
+		up = direction_obj.up
+		player_left_only = direction_obj.player_left_only
+		player_right_only = direction_obj.player_right_only
+		nudge_left = direction_obj.nudge_left
+		nudge_right = direction_obj.nudge_right
+
 		collide_left = self.left_side_collision_rect.collidelist(left_side_collision_list) 
 		if collide_left > -1: self.collisionObjectLeft = left_side_collision_list[collide_left]
 		collide_right = self.right_side_collision_rect.collidelist(right_side_collision_list) 
@@ -76,30 +85,27 @@ class CharacterObject(pygame.sprite.Sprite):
 		else: self.isCollidingRight = True
 		if collide_bottom == -1: self.isCollidingBottom = False
 		else: self.isCollidingBottom = True			
-		
 		#jump indicated, not already in the air
-		if direction == UP and not self.isAirborne:	
+		if direction == up and not self.isAirborne:	
 			self.jumpCounter = 5					
 		
-		if direction == LEFT:
-			self.facing_direction = LEFT
+		if direction == left:
+			self.facing_direction = left
 			if self.left_ind == 15: self.left_ind = 0 
 			else: self.left_ind += 1
 			self.image = self.left_images[self.left_ind/5]					
-		elif direction == RIGHT:
-			self.facing_direction = RIGHT
+		elif direction == right:
+			self.facing_direction = right
 			if self.right_ind == 15: self.right_ind = 0
 			else: self.right_ind += 1
 			self.image = self.right_images[self.right_ind/5]		
-		
 		#check jumpCounter and increment y-pos if necessary
 		elif self.jumpCounter > 0:			
 			self.isAirborne = True
 			self.jumpCounter -= 1
-			self.pos = (self.pos[0], self.pos[1]-self.jump_speed*self.jumpCounter)			
-			
+			self.pos = (self.pos[0], self.pos[1]-self.jump_speed*self.jumpCounter)						
 		#airborne from jump, or simply above the floor height, and not colliding with anything below
-		elif self.isAirborne or self.pos[1] < FLOOR_HEIGHT:
+		elif self.isAirborne or self.pos[1] < self.character_floor:
 							
 			#extending collision rectangle from bottom of self.rect up to current fall_speed
 			if collide_bottom != -1:				
@@ -109,90 +115,101 @@ class CharacterObject(pygame.sprite.Sprite):
 					self.fall_speed = 0
 					self.pos = (self.pos[0], bottom_collision_list[collide_bottom].top - self.rect.height/2 - 1)							
 			
-			if self.pos[1] < FLOOR_HEIGHT:
+			if self.pos[1] < self.character_floor:
 				self.fall_speed += 2
 				self.pos = (self.pos[0], self.pos[1]+self.fall_speed)
-				
+
 		#somehow below the floor, move back to floor	
-		if self.pos[1] > FLOOR_HEIGHT: 
+		if self.pos[1] > self.character_floor: 
 			self.isAirborne = False
 			self.fall_speed = 0
-			self.pos = (self.pos[0], FLOOR_HEIGHT)
+			self.pos = (self.pos[0], self.character_floor)
 				
 		self.rect = self.image.get_rect()
 		self.rect.center = self.pos		
 		
 		#re-set collision rects based on new character object self.rect location
 		self.bottom_collision_rect = pygame.Rect( self.rect.bottomleft, ( self.rect.width, self.fall_speed ) ) 
-		self.right_side_collision_rect = pygame.Rect( self.rect.topright, (RIGHT_RECT_WIDTH, self.rect.height-2) )
-		self.left_side_collision_rect = pygame.Rect( (self.rect.left - LEFT_RECT_WIDTH, self.rect.top), (LEFT_RECT_WIDTH, self.rect.height-2) )		
+		self.right_side_collision_rect = pygame.Rect( self.rect.topright, (dimsAndLims_obj.right_rect_width, self.rect.height-2) )
+		self.left_side_collision_rect = pygame.Rect( (self.rect.left - dimsAndLims_obj.left_rect_width, self.rect.top), (dimsAndLims_obj.left_rect_width, self.rect.height-2) )		
 	
 class AICharacterObject(CharacterObject):
-	def __init__(self, screen, images, starting_position, ai_type, x_limits):
-		CharacterObject.__init__(self, screen, images, starting_position, x_limits)
+	def __init__(self, screen, images, starting_position, ai_type, x_limits, dimsAndLims_obj):
+		CharacterObject.__init__(self, screen, images, starting_position, x_limits, dimsAndLims_obj)
 		self.char_type = ai_type
 	
-	def update(self, direction, left_side_collision_list, right_side_collision_list, bottom_collision_list):
-		move_speed = BACKGROUND_SPEED
-		
-		if direction == LEFT: #and self.isCollidingLeft == False:
+	def update(self, direction, speed, left_side_collision_list, right_side_collision_list, bottom_collision_list, direction_obj, dimsAndLims_obj):
+		move_speed = speed
+		left = direction_obj.left
+		right = direction_obj.right
+		player_left_only = direction_obj.player_left_only
+		player_right_only = direction_obj.player_right_only
+		nudge_left = direction_obj.nudge_left
+		nudge_right = direction_obj.nudge_right
+
+		if direction == left:
 			if self.isCollidingLeft == True: 
 				move_speed /= 5
 			if self.x_movement_limit_left == None:				 
 				self.pos = (self.pos[0] - move_speed, self.pos[1])
-			elif self.x_movement_limit_left - X_LIMIT_TEST_POS < self.pos[0] - move_speed: 
+			elif self.x_movement_limit_left - dimsAndLims_obj.x_limit_test_pos < self.pos[0] - move_speed: 
 				self.pos = (self.pos[0] - move_speed, self.pos[1])
 			else: direction = None
-		elif direction == RIGHT: #and self.isCollidingRight == False:
+		elif direction == right: 
 			if self.isCollidingRight == True:
 				move_speed /= 5
 			if self.x_movement_limit_right == None: 
 				self.pos = (self.pos[0] + move_speed, self.pos[1])
-			elif self.x_movement_limit_right + X_LIMIT_TEST_POS > self.pos[0] + move_speed: 
+			elif self.x_movement_limit_right + dimsAndLims_obj.x_limit_test_pos > self.pos[0] + move_speed: 
 				self.pos = (self.pos[0] + move_speed, self.pos[1])
 			else: direction = None
-		elif direction == PLAYER_LEFT_ONLY: 
+		elif direction == player_left_only: 
 			self.pos = (self.pos[0] + move_speed, self.pos[1])
 			direction = None			
-		elif direction == PLAYER_RIGHT_ONLY: 
+		elif direction == player_right_only: 
 			self.pos = (self.pos[0] - move_speed, self.pos[1])
 			direction = None
-		elif direction == NUDGE_LEFT:
-			if self.x_movement_limit_left - X_LIMIT_TEST_POS < self.pos[0] - NUDGE_AMMOUNT:
-				self.pos = (self.pos[0] - NUDGE_AMMOUNT, self.pos[1])
+		elif direction == nudge_left:
+			if self.x_movement_limit_left - dimsAndLims_obj.x_limit_test_pos < self.pos[0] - speed:
+				self.pos = (self.pos[0] - speed, self.pos[1])
 			direction = None #possibly pass NUDGE up to super for animation later?
-		elif direction == NUDGE_RIGHT:
-			if self.x_movement_limit_right + X_LIMIT_TEST_POS > self.pos[0] + NUDGE_AMMOUNT:
-				self.pos = (self.pos[0] + NUDGE_AMMOUNT, self.pos[1])
-			direction = None #possibly pass NUDGE up to super for animation later?
-		
+		elif direction == nudge_right:
+			if self.x_movement_limit_right + dimsAndLims_obj.x_limit_test_pos > self.pos[0] + speed:
+				self.pos = (self.pos[0] + speed, self.pos[1])
+			direction = None #possibly pass NUDGE up to super for animation later?		
 
-		super(AICharacterObject, self).update(direction, left_side_collision_list, right_side_collision_list, bottom_collision_list)	
+		super(AICharacterObject, self).update(direction, left_side_collision_list, right_side_collision_list, bottom_collision_list, direction_obj, dimsAndLims_obj)	
 	
-class PlayerObject(CharacterObject):
-	def __init__(self, screen, images, starting_position):
-		CharacterObject.__init__(self, screen, images, starting_position)
+class PlayerObject(CharacterObject):	
+	def __init__(self, screen, images, starting_position, x_limits, dimsAndLims_obj):
+		CharacterObject.__init__(self, screen, images, starting_position, x_limits, dimsAndLims_obj)
 	
-	def update(self, direction, left_side_collision_list, right_side_collision_list, bottom_collision_list):		
-		move_speed = BACKGROUND_SPEED
+	def update(self, direction, speed, left_side_collision_list, right_side_collision_list, bottom_collision_list, direction_obj, dimsAndLims_obj):		
+		move_speed = speed
+		left = direction_obj.left
+		right = direction_obj.right
+		player_left_only = direction_obj.player_left_only 
+		player_right_only = direction_obj.player_right_only 
+
+
 		if self.isCollidingLeft or self.isCollidingRight:
 			move_speed /= 5
-		if direction == LEFT:			
-			if self.pos[0] > SCREEN_WIDTH/2 + move_speed:
+		if direction == left:			
+			if self.pos[0] > dimsAndLims_obj.screen_width/2 + move_speed:
 				self.pos = (self.pos[0] - move_speed, self.pos[1])				
-			elif self.pos[0] > SCREEN_WIDTH/2:
-				self.pos = (SCREEN_WIDTH/2, self.pos[1])
-		elif direction == RIGHT:
-			if self.pos[0] < SCREEN_WIDTH/2 - move_speed:
+			elif self.pos[0] > dimsAndLims_obj.screen_width/2:
+				self.pos = (dimsAndLims_obj.screen_width/2, self.pos[1])
+		elif direction == right:
+			if self.pos[0] < dimsAndLims_obj.screen_width/2 - move_speed:
 				self.pos = (self.pos[0] + move_speed, self.pos[1])				
-			elif self.pos[0] < SCREEN_WIDTH/2:
-				self.pos = (SCREEN_WIDTH/2, self.pos[1])
-		elif direction == PLAYER_LEFT_ONLY:
+			elif self.pos[0] < dimsAndLims_obj.screen_width/2:
+				self.pos = (dimsAndLims_obj.screen_width/2, self.pos[1])
+		elif direction == player_left_only:
 			if self.pos[0] - move_speed > move_speed:
 				self.pos = (self.pos[0] - move_speed, self.pos[1])
-				direction = LEFT
-		elif direction == PLAYER_RIGHT_ONLY:
-			if self.pos[0] + move_speed < SCREEN_WIDTH-move_speed:
+				direction = left
+		elif direction == player_right_only:
+			if self.pos[0] + move_speed < dimsAndLims_obj.screen_width-move_speed:
 				self.pos = (self.pos[0] + move_speed, self.pos[1])
-				direction = RIGHT		
-		super(PlayerObject, self).update(direction, left_side_collision_list, right_side_collision_list, bottom_collision_list)
+				direction = right
+		super(PlayerObject, self).update(direction, left_side_collision_list, right_side_collision_list, bottom_collision_list, direction_obj, dimsAndLims_obj)
