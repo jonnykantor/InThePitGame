@@ -1,5 +1,4 @@
 import pygame, math, sys, os
-#from pygame import gfxdraw
 from pygame.locals import *
 from random import randint
 from sys import argv
@@ -12,105 +11,121 @@ from Scenery_Object import *
 from Text_Object import *
 from VerticalButtonsMenu import *
 from GameStatsTracker import *
+
+def event_DirectionKeyPress(direction, player_obj, all_background_surface_managers, sprite_groups_list, direction_obj, dimensions_and_limits_obj, movement_measures_obj):
 	
-def event_LeftKeyPress():
-	global X_LIMIT_TEST_POS
-	background_left_limit_hit, X_LIMIT_TEST_POS = BACKGROUND_SURFACE_MANAGER.update(LEFT, BACKGROUND_SPEED, PLAYER)	
+	left = direction_obj.left
+	right = direction_obj.right
 
-	every_character_rect_list = [x.rect for x in EVERY_CHARACTER_SPRITE_GROUP]					
-	foreground_rect_list = [x.rect for x in FOREGROUND_SPRITE_GROUP]
+	for bsm in all_background_surface_managers:
+		background_limit_hit, dimensions_and_limits_obj.x_limit_test_pos = bsm.update(direction, movement_measures_obj.background_speed, player_obj, direction_obj, dimensions_and_limits_obj)	
 
-	if not background_left_limit_hit and PLAYER.pos[0] == SCREEN_WIDTH/2:
-		PLAYER_SPRITE_GROUP.update(LEFT, every_character_rect_list, every_character_rect_list, foreground_rect_list)	 
-		FOREGROUND_SPRITE_GROUP.update(LEFT, FOREGROUND_SPEED)
-		AI_CHARACTER_SPRITE_GROUP.update(PLAYER_LEFT_ONLY, every_character_rect_list, every_character_rect_list, foreground_rect_list)
+	player_direction = None
+	if direction == left: player_direction = direction_obj.player_left_only
+	elif direction == right: player_direction = direction_obj.player_right_only
+
+	every_character_rect_list 	= [x.rect for x in sprite_groups_list[0]]					
+	foreground_rect_list 		= [x.rect for x in sprite_groups_list[1]]
+	
+	if not background_limit_hit and player_obj.pos[0] == dimensions_and_limits_obj.screen_width/2:
+		sprite_groups_list[2].update(direction, movement_measures_obj.background_speed, every_character_rect_list, every_character_rect_list, foreground_rect_list, direction_obj, dimensions_and_limits_obj)	 
+		sprite_groups_list[1].update(direction, movement_measures_obj.foreground_speed, direction_obj)
+		sprite_groups_list[3].update(player_direction, movement_measures_obj.background_speed, every_character_rect_list, every_character_rect_list, foreground_rect_list, direction_obj, dimensions_and_limits_obj)
 	else:
-		PLAYER_SPRITE_GROUP.update(PLAYER_LEFT_ONLY, every_character_rect_list, every_character_rect_list, foreground_rect_list)	
+		sprite_groups_list[2].update(player_direction, movement_measures_obj.background_speed, every_character_rect_list, every_character_rect_list, foreground_rect_list, direction_obj, dimensions_and_limits_obj)		
 	
-def event_RightKeyPress():
-	global X_LIMIT_TEST_POS
-	background_right_limit_hit, X_LIMIT_TEST_POS = BACKGROUND_SURFACE_MANAGER.update(RIGHT, BACKGROUND_SPEED, PLAYER)	
-
-	every_character_rect_list = [x.rect for x in EVERY_CHARACTER_SPRITE_GROUP]					
-	foreground_rect_list = [x.rect for x in FOREGROUND_SPRITE_GROUP]
-
-	if not background_right_limit_hit and PLAYER.pos[0] == SCREEN_WIDTH/2:  
-		PLAYER_SPRITE_GROUP.update(RIGHT, every_character_rect_list, every_character_rect_list, foreground_rect_list)	
-		FOREGROUND_SPRITE_GROUP.update(RIGHT, FOREGROUND_SPEED)			
-		AI_CHARACTER_SPRITE_GROUP.update(PLAYER_RIGHT_ONLY, every_character_rect_list, every_character_rect_list, foreground_rect_list)
-	else:
-		PLAYER_SPRITE_GROUP.update(PLAYER_RIGHT_ONLY, every_character_rect_list, every_character_rect_list, foreground_rect_list)	
-	
-def eventHandler(event_list):
+def eventHandler(	event_list, menu_obj, menu_commands, sprite_groups_list, player_obj, game_stats_obj, all_background_surface_managers, direction_obj, colors_obj, dimensions_and_limits_obj, movement_measures_obj, txt_types_obj):
 	"""
 	eventHandler takes a pygame.event.get() list and handles every event in the list	 
+	
+	sprite_groups_list content and ordering:
+		EVERY_CHARACTER_SPRITE_GROUP
+		FOREGROUND_SPRITE_GROUP
+		PLAYER_SPRITE_GROUP
+		AI_CHARACTER_SPRITE_GROUP
+		TEXT_SPRITE_GROUP_POINTS
 	"""
-	global LEFT_KEY_DOWN
-	global RIGHT_KEY_DOWN
-	global CURR_FONT
+	left = direction_obj.left
+	right = direction_obj.right
+	down = direction_obj.down
+	up = direction_obj.up
+
 	for event in event_list:		
+
 		#KEYPRESS EVENTS
 		if event.type == pygame.QUIT: sys.exit(0)			
 		if hasattr(event, 'key'):
 			
-			every_character_rect_list = [x.rect for x in EVERY_CHARACTER_SPRITE_GROUP]					
-			foreground_rect_list = [x.rect for x in FOREGROUND_SPRITE_GROUP]						
+			every_character_rect_list = [x.rect for x in sprite_groups_list[0]]					
+			foreground_rect_list = [x.rect for x in sprite_groups_list[1]]						
 			
 			down = event.type == KEYDOWN		
-			if event.key == K_ESCAPE and not down: #sys.exit(0)
-				MAIN_MENU_OBJ.activateMenu()
-				RIGHT_KEY_DOWN = False
-				LEFT_KEY_DOWN = False
+			if event.key == K_ESCAPE and not down:
+				command_return = menu_obj.activateMenu(menu_commands, direction_obj)
+				if command_return == menu_commands.RESTART:
+					return menu_commands.RESTART
+				direction_obj.direction_key_states[left] = False
+				direction_obj.direction_key_states[right] = False
+
 			elif event.key == K_LEFT:
-				if down: LEFT_KEY_DOWN = True						
-				else: LEFT_KEY_DOWN = False
+				if down: direction_obj.direction_key_states[left] = True						
+				else: direction_obj.direction_key_states[left] = False
+
 			elif event.key == K_RIGHT:
-				if down: RIGHT_KEY_DOWN = True
-				else: RIGHT_KEY_DOWN = False
+				if down: direction_obj.direction_key_states[right] = True						
+				else: direction_obj.direction_key_states[right] = False
+
 			elif event.key == K_SPACE and down:
-				PLAYER_SPRITE_GROUP.update(UP, every_character_rect_list, every_character_rect_list, foreground_rect_list)
+				sprite_groups_list[2].update(up, movement_measures_obj.background_speed, every_character_rect_list, every_character_rect_list, foreground_rect_list, direction_obj, dimensions_and_limits_obj)
+
 			elif event.key == K_f and down:
 				#update for aggression animation
-				if PLAYER.isCollidingRight and PLAYER.facing_direction == RIGHT:
+				if player_obj.isCollidingRight and player_obj.facing_direction == right:
 					#rect that has been collided with is stored in CharacterObject super class
-					#player cannot collide with itself, so search npc group and compare rects?
-					for npc_object in AI_CHARACTER_SPRITE_GROUP:
-						if npc_object.rect == PLAYER.collisionObjectRight:
-							npc_object.update(NUDGE_RIGHT, [], [], [])
-							create_And_AddTextSpriteToGroup("50", 30, POINTS_FADING, "impact", GOLD, 50, npc_object.rect.midtop, WHITE, LIGHT_BLUE, [True, True, True], TEXT_SPRITE_GROUP_POINTS)
-							updateGameStats(GAME_STATS, 5, 5, 50)
-				elif PLAYER.isCollidingLeft and PLAYER.facing_direction == LEFT:
-					for npc_object in AI_CHARACTER_SPRITE_GROUP:
-						if npc_object.rect == PLAYER.collisionObjectLeft:
-							npc_object.update(NUDGE_LEFT, [], [], [])
-							create_And_AddTextSpriteToGroup("50", 30, POINTS_FADING, "impact", GOLD, 50, npc_object.rect.midtop, WHITE, LIGHT_BLUE, [True, True, True], TEXT_SPRITE_GROUP_POINTS)
-							updateGameStats(GAME_STATS, 5, 5, 50)
-				#check for npc collisions 
-				#potentially going to need a 'facing' direction variable - or not: global LEFT/RIGHT_KEY_DOWN indicates direction...
+					for npc_object in sprite_groups_list[3]:
+						if npc_object.rect == player_obj.collisionObjectRight:
+							
+							npc_object.update(direction_obj.nudge_right, movement_measures_obj.nudge_amount, [], [], [], direction_obj, dimensions_and_limits_obj)
+							
+							create_And_AddTextSpriteToGroup(	dimensions_and_limits_obj.screen, "50", 30, txt_types_obj.POINTS_FADING, 
+																txt_types_obj, "impact", colors_obj.GOLD, 50, npc_object.rect.midtop, 
+																colors_obj.WHITE, colors_obj.LIGHT_BLUE, [True, True, True], sprite_groups_list[4][0])
+							
+							updateGameStats(game_stats_obj, 5, 5, 50)
+				elif player_obj.isCollidingLeft and player_obj.facing_direction == left:
+					
+					for npc_object in sprite_groups_list[3]:
+						if npc_object.rect == player_obj.collisionObjectLeft:
+							
+							npc_object.update(direction_obj.nudge_left, movement_measures_obj.nudge_amount, [], [], [], direction_obj, dimensions_and_limits_obj)
+							
+							create_And_AddTextSpriteToGroup(	dimensions_and_limits_obj.screen, "50", 30, txt_types_obj.POINTS_FADING, 
+																txt_types_obj, "impact", colors_obj.GOLD, 50, npc_object.rect.midtop, 
+																colors_obj.WHITE, colors_obj.LIGHT_BLUE, [True, True, True], sprite_groups_list[4][0])
+							
+							updateGameStats(game_stats_obj, 5, 5, 50)
 		
-		if event.type == MOUSEMOTION: 
-			m_x_pos, m_y_pos = event.pos
-		elif event.type == MOUSEBUTTONUP:
-			m_x_pos, m_y_pos = event.pos
-			#TESTING TEXT - NOT PERMANENT, TO BE REMOVED						
-			#create_And_AddTextSpriteToGroup("I am a pie! You must eat me now, jerk!", 120, SPEECH_BUBBLE, "impact", BLACK, 40, (m_x_pos, m_y_pos), WHITE, LIGHT_BLUE, [False, True, 5], TEXT_SPRITE_GROUP_POINTS) 			 			
-			
-			#/TESTING
+		#mouse events not used here currently
+		#if event.type == MOUSEMOTION: 
+		#	m_x_pos, m_y_pos = event.pos
+		#elif event.type == MOUSEBUTTONUP:
+		#	m_x_pos, m_y_pos = event.pos
 	
-	if LEFT_KEY_DOWN: 
-		event_LeftKeyPress()
-	if RIGHT_KEY_DOWN: 
-		event_RightKeyPress()
+	if direction_obj.direction_key_states[left]: #left key down
+		event_DirectionKeyPress(left, player_obj, all_background_surface_managers, sprite_groups_list, direction_obj, dimensions_and_limits_obj, movement_measures_obj)
+	if direction_obj.direction_key_states[right]: #right key down
+		event_DirectionKeyPress(right, player_obj, all_background_surface_managers, sprite_groups_list, direction_obj, dimensions_and_limits_obj, movement_measures_obj)
 				
-def updateAllGroups(sprite_groups_list):
+def updateAllGroups(sprite_groups_list, collision_groups_list, text_sprite_groups, direction_obj, dimensions_and_limits_obj, speed):
 	"""All sprite groups in the list are given their basic per-frame update"""
-	every_character_rect_list = [x.rect for x in EVERY_CHARACTER_SPRITE_GROUP]
-	foreground_rect_list = [x.rect for x in FOREGROUND_SPRITE_GROUP]
+	every_character_rect_list = [x.rect for x in collision_groups_list[0]]
+	foreground_rect_list = [x.rect for x in collision_groups_list[1]]
 
 	for group in sprite_groups_list:
-		group.update(None, every_character_rect_list, every_character_rect_list, foreground_rect_list)
+		group.update(None, speed, every_character_rect_list, every_character_rect_list, foreground_rect_list, direction_obj, dimensions_and_limits_obj)
 		
-	spriteUpdateAndRemove_Text(TEXT_SPRITE_GROUP_POINTS)
+	for text_group in text_sprite_groups:
+		spriteUpdateAndRemove_Text(text_group)
 
 def drawAllSprites(draw_list, surface):
 	"""All objects in the draw_list have their draw method called"""
@@ -118,19 +133,26 @@ def drawAllSprites(draw_list, surface):
 		item.draw(surface)
 
 def updateGameStats(game_stats_object, beer_adjustment, security_adjustment, points_adjustment):
+	
 	game_stats_object.update(beer_adjustment, security_adjustment, points_adjustment)
 
 def drawGameStats(game_stats_object):
+	
 	game_stats_object.draw()
 		
-def debug_drawRects(rect_list):
+def debug_drawRects(rect_list, colors_obj, dimensions_and_limits_obj):
 	for rect in rect_list:
-		pygame.draw_rect(SCREEN, BLUE, rect)
+		pygame.draw.rect(dimensions_and_limits_obj.screen, colors_obj.BLUE, rect)
 		
-def AI_behavior_handler(AI_Character_list):
+def AI_behavior_handler(AI_Character_list, 
+						dimensions_and_limits_obj, 
+						EVERY_CHARACTER_SPRITE_GROUP, 
+						FOREGROUND_SPRITE_GROUP, 
+						ai_rand_act, 
+						char_action,
+						movement_measures_obj,
+						directions_obj):
 	
-	global ai_rand_act
-	global char_action	
 
 	
 	every_character_rect_list = [x.rect for x in EVERY_CHARACTER_SPRITE_GROUP]					
@@ -144,14 +166,15 @@ def AI_behavior_handler(AI_Character_list):
 			else: ai_rand_act[index] = randint(5, 10)
 		else: ai_rand_act[index] -= 1
 		if char_action[index] == 2:
-			ai_character.update(None, every_character_rect_list, every_character_rect_list, foreground_rect_list)
-			if isJumping == randint(0, 125): ai_character.update(UP, every_character_rect_list, every_character_rect_list, foreground_rect_list)
+			ai_character.update(None, movement_measures_obj.background_speed, every_character_rect_list, every_character_rect_list, foreground_rect_list, directions_obj, dimensions_and_limits_obj)
+			if isJumping == randint(0, 125): ai_character.update(3, movement_measures_obj.background_speed, every_character_rect_list, every_character_rect_list, foreground_rect_list, directions_obj, dimensions_and_limits_obj)
 		else:			
-			ai_character.update(char_action[index], every_character_rect_list, every_character_rect_list, foreground_rect_list)
-			if isJumping == randint(0, 125): ai_character.update(UP, every_character_rect_list, every_character_rect_list, foreground_rect_list)	
+			ai_character.update(char_action[index], movement_measures_obj.background_speed, every_character_rect_list, every_character_rect_list, foreground_rect_list, directions_obj, dimensions_and_limits_obj)
+			if isJumping == randint(0, 125): ai_character.update(3, movement_measures_obj.background_speed, every_character_rect_list, every_character_rect_list, foreground_rect_list, directions_obj, dimensions_and_limits_obj)	
 			
-def create_And_AddTextSpriteToGroup(text, duration, type, font, font_color, font_size, position, back_color, colorkey_color, argument_vector, sprite_group):
-	text_sprite = textObject(SCREEN, text, duration, type, font, font_color, font_size, position, back_color, colorkey_color, argument_vector)	
+def create_And_AddTextSpriteToGroup(surface, text, duration, type, all_types, font, font_color, font_size, position, back_color, colorkey_color, argument_vector, sprite_group):
+	text_sprite = textObject(	surface, text, duration, type, all_types, font, font_color, font_size, 
+								position, back_color, colorkey_color, argument_vector)	
 	sprite_group.add(text_sprite)	
 
 def spriteUpdateAndRemove_Text(text_sprite_group):
@@ -167,20 +190,143 @@ def loadImages(path, f_names):
 		ret_surfaces.append( pygame.image.load(os.path.join(path, f_name)).convert_alpha() )
 	return ret_surfaces
 
-if __name__ == "__main__": #Globals
-	pygame.init()
-	##loading images for objects	
-	foreground_surfaces 			= loadImages( ASSETS_PATH, FOREGROUND_ASSET_FNAMES )
-	background_surfaces 			= loadImages( ASSETS_PATH, BACKGROUND_ASSET_FNAMES )
-	player_object_surfaces 			= loadImages( ASSETS_PATH, PLAYER_ASSET_FNAMES )
-	AI_character_object_surfaces 	= loadImages( ASSETS_PATH, AI_CHARACTER_ASSET_FNAMES )
+def gameSetup(dimensions_and_limits_obj, DrawPos, menu_commands, colors_obj, directions_obj, movement_measures_obj, txt_types_obj, all_surfaces):
 	
-	drummer_left_arm_surfaces 		= loadImages( ASSETS_PATH + r'DRUMMER/', DRUMMER_ASSET_FNAMES[0] + DRUMMER_ASSET_FNAMES[1] + DRUMMER_ASSET_FNAMES[2] )
-	drummer_right_arm_surfaces 		= loadImages( ASSETS_PATH + r'DRUMMER/', DRUMMER_ASSET_FNAMES[3] + DRUMMER_ASSET_FNAMES[4] )
-	drummer_high_hat_surfaces 		= loadImages( ASSETS_PATH + r'DRUMMER/', DRUMMER_ASSET_FNAMES[5] )
-	drummer_high_hat_foot_surfaces 	= loadImages( ASSETS_PATH + r'DRUMMER/', DRUMMER_ASSET_FNAMES[6] )
-	drummer_left_cymbal_surfaces 	= loadImages( ASSETS_PATH + r'DRUMMER/', DRUMMER_ASSET_FNAMES[7] )
-	drummer_right_cymbal_surfaces 	= loadImages( ASSETS_PATH + r'DRUMMER/', DRUMMER_ASSET_FNAMES[8] )
+	##all_surfaces:
+	## 0	[foreground_surfaces, 				
+	## 1	background_surfaces_far, 
+	## 2	background_surfaces_near, 
+	## 3	player_object_surfaces, 
+	## 4	AI_character_object_surfaces, 
+	## 5	drummer_all_surfaces_subdivided]
+	
+	##main menu instantiation
+	mm_extra_text =	[	
+						
+						["**MOSH**", 1, txt_types_obj.SPEECH_BUBBLE, txt_types_obj, "impact", colors_obj.BLACK, 100, (0, 0), 
+						colors_obj.TEST_COL, colors_obj.LIGHT_BLUE, [False, True, 15, 30, True]],
+
+						["MAIN MENU", 1, txt_types_obj.POINTS_FADING, txt_types_obj, "impact", colors_obj.RED, 80, (0, 0), 
+						colors_obj.BLACK, colors_obj.LIGHT_BLUE, [True, True, True]]	
+
+						#,
+						#["This is a test of the button text bubble object that I created some time ago to see what would happen if I were to set the border-size to 0, with a transparent background, using lots of text with a wider character size limit", 
+						#1, txt_types_obj.SPEECH_BUBBLE, txt_types_obj, "impact", colors_obj.RED, 30, (0, 0), 
+						#colors_obj.LIGHT_BLUE, colors_obj.LIGHT_BLUE, [False, True, 0, 80, True]],
+						
+	]
+	
+	main_menu_obj = VerticalButtonsMenu(	dimensions_and_limits_obj.screen, ["Play", "Quit"], [menu_commands.BACK_TO_GAME, 
+											menu_commands.QUIT],	"impact", 50, None,	colors_obj.WHITE, 
+											colors_obj.BLACK,	colors_obj.GREY, colors_obj.LIGHT_BLUE, 5, 15, directions_obj.center, 
+											True, colors_obj.WHITE, colors_obj.DARK_GREY, mm_extra_text)
+	
+	##instatiate sprite and sprite group objects
+	text_sprite_group_points = pygame.sprite.Group()
+	drummer_sprite_group = pygame.sprite.OrderedUpdates()
+	foreground_sprite_group = pygame.sprite.Group()
+	player_sprite_group = pygame.sprite.Group()
+	ai_character_sprite_group = pygame.sprite.Group()
+
+	for i in range(4): ai_character_sprite_group.add( 	AICharacterObject(dimensions_and_limits_obj.screen, all_surfaces[4], 
+														(dimensions_and_limits_obj.screen_width/3 + randint(-50, 50), DrawPos.character_y_pos), 
+														DEFAULT_AI_TYPE, dimensions_and_limits_obj.x_scroll_limits, dimensions_and_limits_obj)	) 		
+
+	every_character_sprite_group = ai_character_sprite_group.copy()
+
+	for index, forg_surf in enumerate(all_surfaces[0]): 
+		foreground_sprite_group.add(ForegroundSprite(dimensions_and_limits_obj.screen, forg_surf, DrawPos.foreground_asset_positions[index]))
+	
+	player_obj = PlayerObject(	dimensions_and_limits_obj.screen, all_surfaces[3], 
+								(dimensions_and_limits_obj.screen_width/2, DrawPos.character_y_pos), 
+								None, dimensions_and_limits_obj)
+	player_sprite_group.add(player_obj)	
+	every_character_sprite_group.add(player_obj)
+
+	sprite_groups_list = [	every_character_sprite_group,
+							foreground_sprite_group,
+							player_sprite_group,
+							ai_character_sprite_group,
+							[text_sprite_group_points]]
+
+	#surface and scene managers
+	background_surface_manager_far = BackgroundSurfacesManager(	dimensions_and_limits_obj.screen, all_surfaces[1], 
+																DrawPos.background_asset_positions_far,	False, dimensions_and_limits_obj.x_scroll_limits, 
+																dimensions_and_limits_obj.screen_width )
+	background_surface_manager_near = BackgroundSurfacesManager(dimensions_and_limits_obj.screen, all_surfaces[2], 
+																DrawPos.background_asset_positions_near, False, dimensions_and_limits_obj.x_scroll_limits, 
+																dimensions_and_limits_obj.screen_width )		
+	
+	drummer_animation_start_delays 	= [0, 0, 0, 0, 5, 5]	#each entry corresponds to the drummer_*_surfaces entries above, same order
+	drummer_inter_frame_delays 		= [0, 0, 0, 1, 0, 0] 	#same correspondence
+
+	for index, drummer_surfaces_list in enumerate(all_surfaces[5]):
+		drummer_sprite_group.add(AnimatedScenerySprite(	dimensions_and_limits_obj.screen,						#surface for sprite superclass
+														drummer_surfaces_list, 					#subdivided list of animation sequences
+														DrawPos.drum_kit_position,				#upper-left corner of rect draw position
+														(0, 0), 								#(sequence, frame) starting numbers
+														drummer_inter_frame_delays[index], 		#inter-frame delay amount
+														drummer_animation_start_delays[index])) #animation start delay
+								
+
+	drummer_anim_scene_manager = (
+		AnimatedSceneryAnimationManager(	
+			drummer_sprite_group, 																#sprite group
+			[x for x in drummer_sprite_group], 													#list of sprites for direct updating
+			[[(0, 49), (50, 79), (80, 99)], [(0, 79), (80, 99)], [(0, 99)], None, None, None], 	#list_animation_occurence_rates
+			[(0, 2, 4), (1, 1, 5), (2, 0, 3)],												 	#list_active_reactive_animation_tuples
+			[2, 2, 0])) 																		#list_active_reactive_animation_offsets
+	
+	##GameStatsTracker instantiation	
+	game_stats_obj = GameStatsTracker(	50, 0, 0, 999, 
+									[dimensions_and_limits_obj.screen, "0", 1, txt_types_obj.POINTS_FADING, txt_types_obj, "impact", colors_obj.GREEN, 
+									60, (dimensions_and_limits_obj.screen_width-50, dimensions_and_limits_obj.screen_height-25), colors_obj.LIGHT_BLUE, 
+									colors_obj.WHITE, [False, False, False]], colors_obj.LIGHT_BLUE, colors_obj.GOLD, colors_obj.RED)	
+
+	cmd = mainGameLoop([	main_menu_obj,
+							sprite_groups_list,
+							player_obj,
+							game_stats_obj,
+							background_surface_manager_far,
+							background_surface_manager_near,
+							directions_obj,
+							colors_obj,
+							dimensions_and_limits_obj,
+							movement_measures_obj,
+							txt_types_obj,
+							menu_commands,
+							drummer_anim_scene_manager
+						])
+
+	if cmd == menu_commands.RESTART: return cmd
+
+def initialGameSetup():
+	pygame.init()
+
+	#definition class insantiations
+	directions_obj = Directions(0, 1, 2, 3, [False, False, False, False], 4, 5, 6, 7, 8)
+	menu_commands = MenuButtonCommands(0, 1, 2, 3, 4)
+	colors_obj = ColorDefs()
+	dimensions_and_limits_obj = DimensionsAndLimits(800, 600, 5, 5)
+	movement_measures_obj = MovementMeasures(10, 8, 15)
+	DrawPos = DrawPositions(500, (310, 198), [(0, 0)], [(310, 198), (0, 0), (0, 0)], [(0, 0), (310, 198)])
+	txt_types_obj = TextObjectTypes()
+	AA = ArtAssets('art_assets')
+
+	#loading images for objects	
+	foreground_surfaces 			= loadImages( AA.path, AA.foreground_asset_fnames )
+	background_surfaces_far			= loadImages( AA.path, AA.background_asset_fnames_far )
+	background_surfaces_near		= loadImages( AA.path, AA.background_asset_fnames_near )
+	player_object_surfaces 			= loadImages( AA.path, AA.player_asset_fnames )
+	AI_character_object_surfaces 	= loadImages( AA.path, AA.ai_character_asset_fnames )
+	
+	#load images for drummer sprite
+	drummer_left_arm_surfaces 		= loadImages( AA.path + AA.drummer_path, AA.drummer_asset_fnames[0] + AA.drummer_asset_fnames[1] + AA.drummer_asset_fnames[2] )
+	drummer_right_arm_surfaces 		= loadImages( AA.path + AA.drummer_path, AA.drummer_asset_fnames[3] + AA.drummer_asset_fnames[4] )
+	drummer_high_hat_surfaces 		= loadImages( AA.path + AA.drummer_path, AA.drummer_asset_fnames[5] )
+	drummer_high_hat_foot_surfaces 	= loadImages( AA.path + AA.drummer_path, AA.drummer_asset_fnames[6] )
+	drummer_left_cymbal_surfaces 	= loadImages( AA.path + AA.drummer_path, AA.drummer_asset_fnames[7] )
+	drummer_right_cymbal_surfaces 	= loadImages( AA.path + AA.drummer_path, AA.drummer_asset_fnames[8] )
 	drummer_all_surfaces_subdivided = [	[drummer_left_arm_surfaces[0:1], drummer_left_arm_surfaces[1:3], drummer_left_arm_surfaces[3:]], 
 										[drummer_right_arm_surfaces[0:2], drummer_right_arm_surfaces[2:]],
 										[drummer_high_hat_foot_surfaces], 
@@ -189,112 +335,93 @@ if __name__ == "__main__": #Globals
 										[drummer_right_cymbal_surfaces]
 									  ]
 
-	drummer_animation_start_delays = [ 	0,
-										0,
-										0,
-										0,
-										10,	#left cymbal delay
-										10]	#right cymbal delay
+	while(1):
+		cmd = gameSetup(dimensions_and_limits_obj, DrawPos, menu_commands, colors_obj, directions_obj, movement_measures_obj, txt_types_obj, 
+					[foreground_surfaces, 
+					background_surfaces_far, 
+					background_surfaces_near, 
+					player_object_surfaces, 
+					AI_character_object_surfaces, 
+					drummer_all_surfaces_subdivided])
+		if cmd == menu_commands.RESTART: 
+			dimensions_and_limits_obj.screen.fill(colors_obj.BLACK)
 
-	drummer_inter_frame_delays = [1, 1, 1, 1, 0, 0]
-	##
-
-	##main menu instantiation
-	MAIN_MENU_OBJ = VerticalButtonsMenu(SCREEN,
-										["Play", "Quit"],
-										[BACK_TO_GAME, QUIT],
-										"impact",										
-										50,
-										None,
-										WHITE,
-										BLACK,
-										GREY,
-										LIGHT_BLUE,
-										5,
-										15,
-										CENTER,
-										True,
-										WHITE,
-										DARK_GREY)
-	##
-	
-	##instatiate sprite and sprite group objects
-	TEXT_SPRITE_GROUP_POINTS = pygame.sprite.Group()
-
-	BACKGROUND_SURFACE_MANAGER = BackgroundSurfacesManager(SCREEN, background_surfaces, BACKGROUND_ASSET_POSITIONS, False, X_SCROLL_LIMITS )		
-	
-	DRUMMER_SPRITE_GROUP = pygame.sprite.OrderedUpdates()
-	for index, drummer_surfaces_list in enumerate(drummer_all_surfaces_subdivided):
-		DRUMMER_SPRITE_GROUP.add(AnimatedScenerySprite(	SCREEN, 								#surface for sprite superclass
-														drummer_surfaces_list, 					#subdivided list of animation sequences
-														DRUM_KIT_POSITION, 						#upper-left corner of rect draw position
-														(0, 0), 								#(sequence, frame) starting numbers
-														drummer_inter_frame_delays[index], 										#inter-frame delay amount
-														drummer_animation_start_delays[index])) #animation start delay
-								
-
-	DRUMMER_ANIM_SCEN_MANAGER = (
-		AnimatedSceneryAnimationManager(	
-			DRUMMER_SPRITE_GROUP, 																#sprite group
-			[x for x in DRUMMER_SPRITE_GROUP], 													#list of sprites for direct updating
-			[[(0, 49), (50, 79), (80, 99)], [(0, 79), (80, 99)], [(0, 99)], None, None, None], 	#list_animation_occurence_rates
-			[(0, 2, 4), (1, 1, 5), (2, 0, 3)],												 	#list_active_reactive_animation_tuples
-			[2, 2, 0])) 																			#list_active_reactive_animation_offsets
-		
-	FOREGROUND_SPRITE_GROUP = pygame.sprite.Group()
-	for index, forg_surf in enumerate(foreground_surfaces): FOREGROUND_SPRITE_GROUP.add(ForegroundSprite(SCREEN, forg_surf, FOREGROUND_ASSET_POSITIONS[index]))
-	
-	PLAYER = PlayerObject(SCREEN, player_object_surfaces, (SCREEN_WIDTH/2, FLOOR_HEIGHT))
-	PLAYER_SPRITE_GROUP = pygame.sprite.Group()
-	PLAYER_SPRITE_GROUP.add(PLAYER)
-	
-	AI_CHARACTER_SPRITE_GROUP = pygame.sprite.Group()
-	for i in range(4): AI_CHARACTER_SPRITE_GROUP.add( AICharacterObject(SCREEN, AI_character_object_surfaces, (SCREEN_WIDTH/3 + randint(-50, 50), FLOOR_HEIGHT), DEFAULT_AI_TYPE, X_SCROLL_LIMITS)) 		
-	EVERY_CHARACTER_SPRITE_GROUP = AI_CHARACTER_SPRITE_GROUP.copy()
-	EVERY_CHARACTER_SPRITE_GROUP.add(PLAYER)
-	##	
-	
-	##GameStatsTracker instantiation	
-	GAME_STATS = GameStatsTracker(50, 0, 0, 999, 
-									[SCREEN, 
-									"0", 
-									1, 
-									POINTS_FADING, 
-									"impact", 
-									GREEN, 
-									60, 
-									(SCREEN_WIDTH-50, SCREEN_HEIGHT-25), 
-									LIGHT_BLUE, 
-									WHITE, 
-									[False, False, False]])	
+def mainGameLoop(game_loop_args):
+	"""
+	game loop args contains all input arguments for the main game loop: 
+		##game_loop_args:
+			#
+			# 0: main_menu_obj
+			# 1: sprite_groups_list: [0: every_char, 1: foreground, 2: player, 3: ai, 4: [text_groups]]
+			# 2: player_obj
+			# 3: game_stats_obj
+			# 4: background_surface_manager_far
+			# 5: background_surface_manager_near
+			# 6: directions_obj
+			# 7: colors_obj
+			# 8: dimensions_and_limits_obj
+			# 9: movement_measures_obj
+			#10: txt_types_obj
+			#11: menu_commands
+			#12: drummer_anim_scene_manager
+	"""
+	main_menu_obj 						= game_loop_args[0] 
+	sprite_groups_list 					= game_loop_args[1]
+	player_obj 							= game_loop_args[2]
+	game_stats_obj 						= game_loop_args[3]
+	background_surface_manager_far 		= game_loop_args[4]
+	background_surface_manager_near 	= game_loop_args[5]
+	directions_obj 						= game_loop_args[6]
+	colors_obj 							= game_loop_args[7]
+	dimensions_and_limits_obj 			= game_loop_args[8]
+	movement_measures_obj 				= game_loop_args[9]
+	txt_types_obj 						= game_loop_args[10]
+	menu_commands 						= game_loop_args[11]
+	drummer_anim_scene_manager			= game_loop_args[12]
 
 	##ai character rand action vars, temporary
-	ai_rand_act = [0] * len(AI_CHARACTER_SPRITE_GROUP)	
-	char_action = [2] * len(AI_CHARACTER_SPRITE_GROUP)
+	ai_rand_act = [0] * len(sprite_groups_list[3])	
+	char_action = [2] * len(sprite_groups_list[3])
 
+	main_menu_obj.activateMenu(menu_commands, directions_obj)
+	main_menu_obj.addNewButton("Restart", -1, menu_commands.RESTART)
+	main_menu_obj.replaceButtonAtIndex("Back To Game", 0, menu_commands.BACK_TO_GAME )
 
-	
-if __name__ == "__main__": #game loop
-	MAIN_MENU_OBJ.activateMenu()	
+	other_tick = False	
+	command_return = None
 	while 1:
 		try:
 			time_elapsed = CLOCK.tick(30)
-			
-			event_list = pygame.event.get()			
-			eventHandler(event_list)			
-			
-			AI_behavior_handler(AI_CHARACTER_SPRITE_GROUP)		
-			
-			updateAllGroups([AI_CHARACTER_SPRITE_GROUP, PLAYER_SPRITE_GROUP])				
-			DRUMMER_ANIM_SCEN_MANAGER.update()			
-			
-			drawAllSprites([BACKGROUND_SURFACE_MANAGER, DRUMMER_ANIM_SCEN_MANAGER, AI_CHARACTER_SPRITE_GROUP, PLAYER_SPRITE_GROUP, FOREGROUND_SPRITE_GROUP, TEXT_SPRITE_GROUP_POINTS], SCREEN)								
-			drawGameStats(GAME_STATS)
+			other_tick = not other_tick
 
-			updateGameStats(GAME_STATS, 0, 0, 0)
+			event_list = pygame.event.get()			
+
+			command_return = eventHandler(	event_list, main_menu_obj, menu_commands, sprite_groups_list, player_obj, game_stats_obj, 
+											[background_surface_manager_far, background_surface_manager_near], directions_obj, 
+											colors_obj, dimensions_and_limits_obj, movement_measures_obj, txt_types_obj)			
+			
+			if command_return == menu_commands.RESTART:	return command_return
+
+			AI_behavior_handler(	sprite_groups_list[3], dimensions_and_limits_obj, sprite_groups_list[0], sprite_groups_list[1], 
+									ai_rand_act, char_action, movement_measures_obj, directions_obj)
+			
+			updateAllGroups(	[sprite_groups_list[3], sprite_groups_list[2]], [sprite_groups_list[0], sprite_groups_list[1]], 
+								sprite_groups_list[4], directions_obj, dimensions_and_limits_obj, movement_measures_obj.background_speed)				
+			
+			if other_tick: drummer_anim_scene_manager.update(movement_measures_obj.background_speed, directions_obj)			
+			
+			drawAllSprites(	[background_surface_manager_far, drummer_anim_scene_manager, background_surface_manager_near, 
+							sprite_groups_list[3], sprite_groups_list[2], sprite_groups_list[1], sprite_groups_list[4][0]], 
+							dimensions_and_limits_obj.screen)								
+			drawGameStats(game_stats_obj)
+
+			updateGameStats(game_stats_obj, 0, 0, 0)
 
 			pygame.display.flip()
 
 		except Exception:
 			#pass
 			print sys.exc_info()
+
+if __name__ == "__main__":
+	initialGameSetup()
