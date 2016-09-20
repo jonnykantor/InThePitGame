@@ -84,24 +84,8 @@ class ArtAssets(object):
 			self.slash = "\\"
 		self.path = path + self.slash
 		self.drummer_path = "DRUMMER" + self.slash
-		self.player_asset_fnames = [
-									'death_sprite_left_1.png',
-									'death_sprite_left_2.png',
-									'death_sprite_left_3.png',
-									'death_sprite_left_4.png',
-									'death_sprite_right_1.png',
-									'death_sprite_right_2.png',
-									'death_sprite_right_3.png',
-									'death_sprite_right_4.png']
-		self.ai_character_asset_fnames = [
-									'red_death_sprite_left_1.png',
-									'red_death_sprite_left_2.png',
-									'red_death_sprite_left_3.png',
-									'red_death_sprite_left_4.png',
-									'red_death_sprite_right_1.png',
-									'red_death_sprite_right_2.png',
-									'red_death_sprite_right_3.png',
-									'red_death_sprite_right_4.png']			
+		self.player_asset_fnames = []				#to be updated with player-chosen art-assets once those are actually drawn
+		self.ai_character_asset_fnames = []			#to be updated with player-chosen art-assets once those are actually drawn
 		self.foreground_asset_fnames = [
 									'Foreground_Crowd_Shadows_1.png']
 		self.background_asset_fnames_near = [
@@ -158,21 +142,3 @@ class ArtAssets(object):
 									'DRUMMER_Cymbal_RIGHT_HIT_REVERSE_1.png',
 									'DRUMMER_Cymbal_RIGHT_STILL.png']
 									]
-
-#NOTE: THESE PYGAME SYSFONTS DO NOT WORK:
-#anything ending in 'bold' (FONT_LIST[CURR_FONT][-4:] == "bold")	
-#anything ending in 'italic' (FONT_LIST[CURR_FONT][-6:] == "italic")
-#cambria
-#yugothic
-#FONT_LIST = pygame.font.get_fonts()
-#CURR_FONT = 0
-#FONT_LIMIT = len(FONT_LIST)
-##
-
-##image array layout keys	
-#LEFT
-
-##
-
-##AI states
-##
