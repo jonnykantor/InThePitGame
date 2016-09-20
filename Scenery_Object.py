@@ -131,6 +131,9 @@ class AnimatedSceneryAnimationManager(object):
 		self.spritegroup.draw(surface)
 
 	def searchDropChart(self, drop_chart, index, value, upper_ind_b, lower_ind_b, iterat, default=0, max_depth=5):
+		"""
+		simple binary search to determine which tuple contains a range that the provided value falls in
+		"""
 		iterat += 1
 		if max_depth == iterat: return default
 		cur_tuple = drop_chart[index]
