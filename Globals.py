@@ -40,6 +40,7 @@ class ColorDefs(object):
 class DimensionsAndLimits(object):
 	AT_LIMIT_LEFT = 1
 	AT_LIMIT_RIGHT = 2
+	move_speed_limit_denom = 2
 	def __init__(	self, 
 					screen_width, 
 					screen_height, 
@@ -170,32 +171,8 @@ class ArtAssets(object):
 
 ##image array layout keys	
 #LEFT
-LEFT_0 	= 0
-LEFT_1 	= 1
-LEFT_2 	= 2
-LEFT_3 	= 3
-#RIGHT
-RIGHT_0 = 4
-RIGHT_1 = 5
-RIGHT_2 = 6
-RIGHT_3 = 7
-#IDLE
-IDLE_0 	= 8
-IDLE_1 	= 9
-IDLE_2 	= 10
-IDLE_3 	= 11
-#UP
-UP_0 	= 12
-UP_1 	= 13
-UP_2 	= 14
-UP_3 	= 15
-#DOWN
-DOWN_0 	= 16
-DOWN_1 	= 17
-DOWN_2 	= 18
-DOWN_3 	= 19
+
 ##
 
 ##AI states
-DEFAULT_AI_TYPE = 0 #debugging ai type
 ##
