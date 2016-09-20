@@ -89,6 +89,7 @@ class VerticalButtonsMenu(object):
 				if curr_height > self.largest_height: self.largest_height = curr_height
 		
 		#instantiate buttons using font surfaces
+		
 		self.total_height = 0
 		self.button_images = []
 		self.selected_button_images = []
@@ -388,3 +389,20 @@ class VerticalButtonsMenu(object):
 		"""
 		self.removeButtonAtIndex(index_for_replacement)
 		self.addNewButton(new_button_text, index_for_replacement, new_button_command)
+
+	def clearMenu(self):
+		"""
+		deletes all buttons and non-interactive elements from the menu
+		Note: irreversable, menu must be re-initialized using constructor, or repopulated using other class methods
+		"""
+
+		self.button_text_array = []
+		self.commands = []
+		self.non_int_elmnt_sprite_group.empty()
+		self.largest_height = 0
+		self.largest_width = 0
+		self.font_images = []
+		self.selected_font_images = []
+		self.total_height = 0
+		self.button_images = []
+		self.selected_button_images = []
