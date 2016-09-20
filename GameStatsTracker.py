@@ -3,6 +3,9 @@ from Text_Object import *
 from Globals import *
 
 class GameStatsTracker (object):
+	STATE_PAUSED = 0
+	STATE_PLAYING = 1
+	STATE_GAMEOVER = 2
 	def __init__(	self, 
 					starting_beer_level, 
 					starting_security_level, 
@@ -28,6 +31,8 @@ class GameStatsTracker (object):
 			colorkey for alpha
 			textObject argument vector
 		"""
+		self.current_game_state = self.STATE_PLAYING
+
 		self.t_o_a_l = text_object_argument_list
 		self.update_necessary = False
 
@@ -106,6 +111,8 @@ class GameStatsTracker (object):
 		if points_adjustment: 
 			self.points_total += points_adjustment
 			self.update_necessary = True
+
+		if self.beer_level == 0: self.current_game_state = self.STATE_GAMEOVER
 
 	def draw(self):
 		
