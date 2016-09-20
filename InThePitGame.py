@@ -262,8 +262,8 @@ def gameSetup(dimensions_and_limits_obj, DrawPos, menu_commands, colors_obj, dir
 
 	every_character_sprite_group = ai_character_sprite_group.copy()
 
-	#for index, forg_surf in enumerate(all_surfaces[0]): 
-	#	foreground_sprite_group.add(ForegroundSprite(dimensions_and_limits_obj.screen, forg_surf, DrawPos.foreground_asset_positions[index]))
+	for index, forg_surf in enumerate(all_surfaces[0]): 
+		foreground_sprite_group.add(ForegroundSprite(dimensions_and_limits_obj.screen, forg_surf, DrawPos.foreground_asset_positions[index]))
 	
 	player_obj = PlayerObject(	dimensions_and_limits_obj.screen, all_surfaces[3], 
 								(dimensions_and_limits_obj.screen_width/2, DrawPos.character_y_pos), 
@@ -422,46 +422,46 @@ def mainGameLoop(game_loop_args):
 	other_tick = False	
 	command_return = None
 	while 1:
-		#try:
-		time_elapsed = CLOCK.tick(30)
-		other_tick = not other_tick
+		try:
+			time_elapsed = CLOCK.tick(30)
+			other_tick = not other_tick
 
-		event_list = pygame.event.get()			
+			event_list = pygame.event.get()			
 
-		command_return = eventHandler(	event_list, main_menu_obj, menu_commands, sprite_groups_list, player_obj, game_stats_obj, 
-										[background_surface_manager_far, background_surface_manager_near], directions_obj, 
-										colors_obj, dimensions_and_limits_obj, movement_measures_obj, txt_types_obj)			
-		
-		if command_return == menu_commands.RESTART:	return command_return
+			command_return = eventHandler(	event_list, main_menu_obj, menu_commands, sprite_groups_list, player_obj, game_stats_obj, 
+											[background_surface_manager_far, background_surface_manager_near], directions_obj, 
+											colors_obj, dimensions_and_limits_obj, movement_measures_obj, txt_types_obj)			
+			
+			if command_return == menu_commands.RESTART:	return command_return
 
-		AI_characters_update(	sprite_groups_list[3], dimensions_and_limits_obj, directions_obj, sprite_groups_list, movement_measures_obj)
+			AI_characters_update(	sprite_groups_list[3], dimensions_and_limits_obj, directions_obj, sprite_groups_list, movement_measures_obj)
 
-		#AI_behavior_handler(	sprite_groups_list[3], dimensions_and_limits_obj, sprite_groups_list[0], sprite_groups_list[1], 
-		#						ai_rand_act, char_action, movement_measures_obj, directions_obj)
-		
-		updateAllGroups(	[sprite_groups_list[3], sprite_groups_list[2]], [sprite_groups_list[0], sprite_groups_list[1]], 
-							sprite_groups_list[4], directions_obj, dimensions_and_limits_obj, movement_measures_obj.background_speed)				
-		
-		if other_tick: drummer_anim_scene_manager.update(movement_measures_obj.background_speed, directions_obj)			
-		
-		drawAllSprites(	[background_surface_manager_far, drummer_anim_scene_manager, background_surface_manager_near, 
-						sprite_groups_list[0], sprite_groups_list[1], sprite_groups_list[4][0]], 
-						dimensions_and_limits_obj.screen)								
-		
-		updateGameStats(game_stats_obj, 1, 0, 0)
-		drawGameStats(game_stats_obj)
-		if game_stats_obj.current_game_state == game_stats_obj.STATE_GAMEOVER:
-			main_menu_obj.clearMenu()
-			main_menu_obj.addNewButton("Restart", -1, menu_commands.RESTART)
-			main_menu_obj.addNewButton("Quit", -1, menu_commands.QUIT)
-			command_return = main_menu_obj.activateMenu(menu_commands, directions_obj)
-			if command_return == menu_commands.RESTART: return menu_commands.RESTART
+			#AI_behavior_handler(	sprite_groups_list[3], dimensions_and_limits_obj, sprite_groups_list[0], sprite_groups_list[1], 
+			#						ai_rand_act, char_action, movement_measures_obj, directions_obj)
+			
+			updateAllGroups(	[sprite_groups_list[3], sprite_groups_list[2]], [sprite_groups_list[0], sprite_groups_list[1]], 
+								sprite_groups_list[4], directions_obj, dimensions_and_limits_obj, movement_measures_obj.background_speed)				
+			
+			if other_tick: drummer_anim_scene_manager.update(movement_measures_obj.background_speed, directions_obj)			
+			
+			drawAllSprites(	[background_surface_manager_far, drummer_anim_scene_manager, background_surface_manager_near, 
+							sprite_groups_list[0], sprite_groups_list[1], sprite_groups_list[4][0]], 
+							dimensions_and_limits_obj.screen)								
+			
+			updateGameStats(game_stats_obj, 1, 0, 0)
+			drawGameStats(game_stats_obj)
+			if game_stats_obj.current_game_state == game_stats_obj.STATE_GAMEOVER:
+				main_menu_obj.clearMenu()
+				main_menu_obj.addNewButton("Restart", -1, menu_commands.RESTART)
+				main_menu_obj.addNewButton("Quit", -1, menu_commands.QUIT)
+				command_return = main_menu_obj.activateMenu(menu_commands, directions_obj)
+				if command_return == menu_commands.RESTART: return menu_commands.RESTART
 
-		pygame.display.flip()
+			pygame.display.flip()
 
-#		except Exception:
+		except Exception:
 			#pass
-#			print sys.exc_info()
+			print sys.exc_info()
 
 if __name__ == "__main__":
 	initialGameSetup()
